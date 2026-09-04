@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Slide-by-slide copy and layout for the DRISHTI SIH 2026 idea-submission deck.">
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>DRISHTI Deck Build Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    color-scheme:light;
+    --ground:#edf1f2; --surface:#fbfcfd; --sunk:#e3e9ea; --rule:#d3dbdd; --rule-firm:#b8c4c7;
+    --ink:#0f181c; --ink-2:#44555c; --muted:#78888e;
+    --accent:#0d7490; --accent-deep:#0a5567; --accent-wash:#dceef2;
+    --signal:#bd6108; --signal-wash:#f7e9d8;
+    --good:#146c43; --good-wash:#dcefe3;
+    --warn:#96620c; --warn-wash:#f5eada;
+    --crit:#ab2317; --crit-wash:#f6e0dd;
+    --lift:0 1px 2px rgba(15,24,28,.05), 0 12px 28px -18px rgba(15,24,28,.22);
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#070d10; --surface:#101a1e; --sunk:#0b1316; --rule:#223136; --rule-firm:#35474e;
+    --ink:#e8f1f3; --ink-2:#a3b3b9; --muted:#75868c;
+    --accent:#3aafc6; --accent-deep:#7fd2e2; --accent-wash:#0d2b33;
+    --signal:#e0913c; --signal-wash:#2e1f0e;
+    --good:#43c176; --good-wash:#0f2c1b;
+    --warn:#d9a13a; --warn-wash:#2d240f;
+    --crit:#e2685c; --crit-wash:#331816;
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -20px rgba(0,0,0,.8);
+  }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --ground:#070d10; --surface:#101a1e; --sunk:#0b1316; --rule:#223136; --rule-firm:#35474e;
+    --ink:#e8f1f3; --ink-2:#a3b3b9; --muted:#75868c;
+    --accent:#3aafc6; --accent-deep:#7fd2e2; --accent-wash:#0d2b33;
+    --signal:#e0913c; --signal-wash:#2e1f0e;
+    --good:#43c176; --good-wash:#0f2c1b;
+    --warn:#d9a13a; --warn-wash:#2d240f;
+    --crit:#e2685c; --crit-wash:#331816;
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -20px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"Source Serif 4",Georgia,serif;font-size:16px;line-height:1.6;
+       -webkit-font-smoothing:antialiased}
+  .shell{max-width:1080px;margin:0 auto;padding:0 26px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  h1,h2,h3,h4,h5{font-family:"Archivo",system-ui,sans-serif;text-wrap:balance;margin:0}
+  h1{font-size:clamp(2rem,4.8vw,3.1rem);line-height:1.04;letter-spacing:-.026em;font-weight:700}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--sunk);
+       padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+  p{margin:12px 0}
+
+  .cover{padding:64px 0 26px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.2em;
+          text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .kicker::after{content:"";flex:1;height:1px;background:var(--rule-firm)}
+  .standfirst{font-size:1.15rem;line-height:1.55;color:var(--ink-2);max-width:64ch;margin:18px 0 0}
+
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;
+         background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin:30px 0 0}
+  .rules div{background:var(--surface);padding:13px 16px;font-size:13.5px;font-family:"Archivo",sans-serif}
+  .rules b{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+           text-transform:uppercase;color:var(--crit);margin-bottom:4px}
+
+  /* ---- slide card ---- */
+  .slide{background:var(--surface);border:1px solid var(--rule-firm);border-radius:12px;
+         margin:34px 0;box-shadow:var(--lift);overflow:hidden}
+  .sbar{display:flex;align-items:center;gap:14px;padding:13px 20px;background:var(--sunk);
+        border-bottom:1px solid var(--rule-firm)}
+  .sbar .num{font-family:"IBM Plex Mono",monospace;font-size:1.3rem;font-weight:700;color:var(--accent);
+             line-height:1}
+  .sbar .tt{font-family:"Archivo",sans-serif;font-weight:600;font-size:1.02rem;letter-spacing:-.01em}
+  .sbar .job{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+             letter-spacing:.06em;text-transform:uppercase;color:var(--signal);text-align:right}
+  .sbody{padding:20px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:800px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+  .box{background:var(--ground);border:1px solid var(--rule);border-radius:9px;padding:14px 16px}
+  .box.acc{background:var(--accent-wash);border-color:var(--accent)}
+  .box.sig{background:var(--signal-wash);border-color:var(--signal)}
+  .box.good{background:var(--good-wash);border-color:var(--good)}
+  .box.warn{background:var(--warn-wash);border-color:var(--warn)}
+  .box.crit{background:var(--crit-wash);border-color:var(--crit)}
+  .box h5{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);
+          margin-bottom:9px;font-weight:600}
+  .box ul{list-style:none;margin:0;padding:0}
+  .box li{font-family:"Archivo",sans-serif;font-size:13px;line-height:1.5;padding:4px 0 4px 13px;
+          position:relative;color:var(--ink-2)}
+  .box li::before{content:"▸";position:absolute;left:0;color:var(--accent);font-size:10px;top:5px}
+  .box li b{color:var(--ink);font-weight:600}
+  .box li .m{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink)}
+
+  .strip{background:var(--ink);color:var(--ground);border-radius:8px;padding:11px 16px;margin:0 0 16px;
+         font-family:"IBM Plex Mono",monospace;font-size:12.5px;letter-spacing:.01em;
+         display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
+  .strip b{color:#fff;font-weight:600}
+  .strip .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+
+  .fill{background:var(--surface);border:1px dashed var(--rule-firm);border-radius:8px;padding:14px 18px;
+        font-family:"IBM Plex Mono",monospace;font-size:13.5px;line-height:2.1}
+  .fill .k{color:var(--muted)}
+  .fill .v{color:var(--ink);font-weight:600}
+  .fill .todo{color:var(--crit);font-weight:600}
+
+  .dspec{background:var(--sunk);border:1px solid var(--rule-firm);border-left:3px solid var(--signal);
+         border-radius:0 8px 8px 0;padding:13px 16px;margin:14px 0 0}
+  .dspec h5{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;
+            text-transform:uppercase;color:var(--signal);margin-bottom:7px}
+  .dspec p{margin:0;font-size:13.5px;color:var(--ink-2)}
+  .dspec p + p{margin-top:6px}
+
+  figure{margin:16px 0 0;background:var(--ground);border:1px solid var(--rule);border-radius:9px;padding:16px}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:11px;border-top:1px solid var(--rule);padding-top:9px}
+  svg text{font-family:"Archivo",sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .t1{fill:var(--ink);font-size:12.5px}
+  .t2{fill:var(--ink-2);font-size:11px}
+  .t3{fill:var(--muted);font-size:9.5px}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
+        border-radius:0 9px 9px 0;padding:16px 20px;margin:22px 0;box-shadow:var(--lift)}
+  .note.crit{border-left-color:var(--crit)}
+  .note h4{font-family:"Archivo",sans-serif;font-size:.98rem;margin-bottom:6px}
+  .note p{margin:0;font-size:15px}
+  .note p + p{margin-top:8px}
+
+  footer{border-top:2px solid var(--ink);margin-top:48px;padding:20px 0 60px;
+         font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);line-height:1.8}
+  a{color:var(--accent-deep)}
+</style>
+</head>
+<body>
+
+
+<div class="shell">
+
+<header class="cover">
+  <p class="kicker">DRISHTI &nbsp;·&nbsp; SIH 2026 &nbsp;·&nbsp; PS 26057 &nbsp;·&nbsp; idea-submission build sheet</p>
+  <h1>Six slides, built to<br>separate not explain</h1>
+  <p class="standfirst">Exact copy and layout for the idea-submission deck. 50 of 500 teams advance
+  per problem statement — so every slide has one job, and that job is to look unmistakably ahead of the
+  other 499. Copy the text straight out; the two diagram specs tell you what to draw.</p>
+
+  <div class="rules">
+    <div><b>slide limit</b>6 total, including the title page. Delete the instructions slide.</div>
+    <div><b>format</b>PDF only. No PPT, no Word — the portal rejects them.</div>
+    <div><b>template</b>Locked. Keep the official headings; restyle inside them.</div>
+    <div><b>style</b>No paragraphs. Points, diagrams, infographics.</div>
+  </div>
+</header>
+
+<!-- ══════════════ SLIDE 1 ══════════════ -->
+<div class="slide">
+  <div class="sbar">
+    <span class="num">1</span>
+    <span class="tt">TITLE PAGE</span>
+    <span class="job">job · get it right, spend no time here</span>
+  </div>
+  <div class="sbody">
+    <div class="fill">
+      <span class="k">Problem Statement ID –</span> <span class="v">SIH26057</span><br>
+      <span class="k">Problem Statement Title –</span> <span class="v">AI-Powered Automated Underwater Marine Debris and Anomaly Detection System using Side-Scan Sonar Imagery</span><br>
+      <span class="k">Theme –</span> <span class="v">Disaster Management</span> <span class="k">← confirm against the portal listing</span><br>
+      <span class="k">PS Category –</span> <span class="v">Software</span><br>
+      <span class="k">Team ID –</span> <span class="todo">[fill]</span><br>
+      <span class="k">Team Name (Registered on portal) –</span> <span class="todo">[fill]</span>
+    </div>
+    <div class="dspec">
+      <h5>do this on every slide from here</h5>
+      <p>Team-name badge <strong>top-left</strong> in a rounded outline, SIH logo <strong>top-right</strong>,
+      footer <code>@SIH Idea submission- &lt;TEAM&gt;</code> + page number. Both winning decks you sent do
+      exactly this — it is the visual signature of a submission that took itself seriously.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 2 ══════════════ -->
+<div class="slide">
+  <div class="sbar">
+    <span class="num">2</span>
+    <span class="tt">DRISHTI <span style="font-weight:400;color:var(--muted)">— rename the "IDEA TITLE" header to your product name</span></span>
+    <span class="job">job · "these people are ahead"</span>
+  </div>
+  <div class="sbody">
+
+    <div class="strip">
+      <span class="lbl">built &amp; measured</span>
+      <span>mAP@50 <b>0.641</b></span>
+      <span>pipeline AP@50 <b>0.99</b></span>
+      <span>geotag <b>&lt;1 m</b></span>
+      <span>calibration error <b>0.037</b></span>
+      <span><b>90 ms</b>/tile on CPU</span>
+      <span><b>0 GB</b> PyTorch at the edge</span>
+    </div>
+
+    <div class="grid3">
+      <div class="box">
+        <h5>Proposed solution</h5>
+        <ul>
+          <li><b>M0 · Preprocess</b> — Lee MMSE speckle filter + CLAHE. Sonar speckle is <em>multiplicative</em>, so a blur would destroy the shadow edges that carry the signal.</li>
+          <li><b>M1 · Detect</b> — YOLOv8s, anchor-free, 4 hazard classes + explicit "empty seabed" negatives.</li>
+          <li><b>M2 · Confidence &amp; noise</b> — per-class gate → per-class calibration → <b>acoustic-shadow geometry check</b> → honest 0–100 %.</li>
+          <li><b>M3 · Geotag &amp; report</b> — XTF ping headers → lat/lon + size in metres → JSON / CSV / GeoJSON.</li>
+          <li><b>M4 · Dashboard</b> — upload log · live map · review queue · export.</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <h5>How it addresses the problem <span style="text-transform:none;letter-spacing:0;font-weight:400">— all 8 PS requirements</span></h5>
+        <ul>
+          <li>Ingest SSS + spatial metadata → <span class="m">XTF parser + nav CSV</span></li>
+          <li>Speckle · varying resolution · shadows · dropouts → <span class="m">M0 + SSS-tuned augmentation</span></li>
+          <li>Detect anomalies vs natural background → <span class="m">M1 + 500 hard-negative tiles</span></li>
+          <li>0–100 % score, reject rock clusters → <span class="m">M2, ECE 0.052→0.037</span></li>
+          <li>Lat/lon + dimensions from ping headers → <span class="m">M3, validated &lt;1 m</span></li>
+          <li>Structured JSON / CSV → <span class="m">report engine</span></li>
+          <li>UI dashboard, real-time map → <span class="m">M4, WebSocket per-tile push</span></li>
+          <li>Edge-deployable, offline → <span class="m">torch-free ONNX, 90 ms/tile CPU</span></li>
+        </ul>
+      </div>
+
+      <div class="box sig">
+        <h5>Innovation &amp; uniqueness</h5>
+        <ul>
+          <li><b>Physics beats a bigger network.</b> A rock cluster is as bright as a wreck — only one casts a shadow. Expected length <span class="m">L = h·G/(H−h)</span> is computable, so false positives are rejected <em>deterministically</em>. No second model, no extra data.</li>
+          <li><b>Confidence that means something.</b> Per-class Platt calibration; a single global one made it <em>worse</em>.</li>
+          <li><b>Torch-free edge.</b> ~210 MB runtime instead of PyTorch's 4.4 GB — meets the latency target on a CPU with no GPU.</li>
+          <li><b>Synthetic only where nothing real exists.</b> No public ghost-net-in-sonar dataset exists; we generated one with modelled acoustics.</li>
+          <li><b>Human-in-the-loop by design.</b> ≥80 % auto · 30–80 % analyst queue · confirmations become fine-tuning labels.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="dspec">
+      <h5>diagram A — full-width strip along the bottom</h5>
+      <p>The five-module pipeline, but it must show <strong>mechanism</strong>, not five boxes with arrows —
+      that is what everyone else will draw. Two details make it yours: the <strong>Module 3 → Module 2
+      feedback arrow</strong> labelled <code>altitude H + slant range R</code> (the geometry the shadow
+      check consumes), and the <strong>three review bands</strong> hanging off the output
+      (≥80 % auto-confirmed · 30–80 % human review · &lt;30 % dropped).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 3 ══════════════ -->
+<div class="slide">
+  <div class="sbar">
+    <span class="num">3</span>
+    <span class="tt">TECHNICAL APPROACH</span>
+    <span class="job">job · "they understand sonar, not just PyTorch"</span>
+  </div>
+  <div class="sbody">
+
+    <div class="dspec" style="margin-top:0;margin-bottom:16px">
+      <h5>diagram B — left half of the slide · THE differentiator, draw this well</h5>
+      <p>Two objects on the seabed, side by side. <strong>Wreck:</strong> bright highlight + a long dark
+      shadow trailing away → labelled <span class="mono">DETECTED</span> in green.
+      <strong>Rock cluster:</strong> the <em>same</em> brightness, but almost no shadow → labelled
+      <span class="mono">REJECTED</span> in red. Tow-fish above with <code>H</code> (altitude) and
+      <code>R</code> (slant range) marked. Equations beside it:
+      <code>L = h·G/(H−h)</code> and <code>G = √(R²−H²)</code>.</p>
+      <p>This one graphic proves domain mastery faster than any paragraph. It is the single highest-value
+      thing on the whole deck.</p>
+    </div>
+
+    <div class="grid4" style="margin-bottom:14px">
+      <div class="box"><h5>Frontend</h5><ul>
+        <li>React 18</li><li>Vite</li><li>React-Leaflet</li><li>Recharts</li><li>Axios</li></ul></div>
+      <div class="box"><h5>Backend</h5><ul>
+        <li>Django REST</li><li>Channels (WebSocket)</li><li>Celery</li><li>Redis</li><li>PostgreSQL</li></ul></div>
+      <div class="box acc"><h5>AI / ML</h5><ul>
+        <li>YOLOv8s · Ultralytics</li><li>ONNX Runtime</li><li>OpenCV · NumPy</li><li>scikit-learn</li><li>TensorRT (Jetson)</li></ul></div>
+      <div class="box"><h5>Geo / DevOps</h5><ul>
+        <li>XTF ping-header parser</li><li>pyproj · shapely</li><li>Docker Compose</li><li>Turborepo</li><li>GitHub · HuggingFace</li></ul></div>
+    </div>
+
+    <div class="grid2">
+      <div class="box acc">
+        <h5>Deep dive · Module 2 — confidence &amp; noise</h5>
+        <ul>
+          <li><b>Per-class gate</b> — false positives sit far below true positives, at a different level for every class</li>
+          <li><b>Platt scaling</b> <span class="m">P(correct|s) = 1/(1+e^(as+b))</span>, fit <em>per class</em> on held-out data</li>
+          <li><b>Honesty metric</b> <span class="m">ECE = Σ(n_b/N)·|acc_b − conf_b|</span> → <b>0.052 → 0.037</b></li>
+          <li><b>Shadow check</b> <span class="m">L = h·G/(H−h)</span> — demote geometrically impossible detections</li>
+          <li>Result: shipwreck precision <b>0.63 → 0.73</b>, cylinder <b>0.58 → 0.75</b></li>
+        </ul>
+      </div>
+      <div class="box acc">
+        <h5>Deep dive · Module 3 — geotagging</h5>
+        <ul>
+          <li>image row → ping → interpolated <span class="m">(lat, lon, heading)</span></li>
+          <li>image column → slant range <span class="m">R</span> → ground range <span class="m">G = √(R²−H²)</span></li>
+          <li>geodesic step <span class="m">G</span> metres ⟂ heading (port −90° / starboard +90°)</li>
+          <li><b>Validated &lt; 1 m</b> against an independent navigation record</li>
+          <li>Output carries a <span class="m">ping_id</span> pointing back to the exact sonar ping</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="strip" style="margin:14px 0 0">
+      <span class="lbl">training</span>
+      <span>YOLOv8s, COCO-pretrained</span>
+      <span><b>6,405</b> tiles (4,775 / 780 / 850)</span>
+      <span>640 px · 120 epochs, best @ <b>91</b></span>
+      <span>RTX 4050, <b>2.1 h</b></span>
+      <span>vertical flip <b>OFF</b> — preserves highlight→shadow polarity</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 4 ══════════════ -->
+<div class="slide">
+  <div class="sbar">
+    <span class="num">4</span>
+    <span class="tt">FEASIBILITY AND VIABILITY</span>
+    <span class="job">job · "deployable, and they know its limits"</span>
+  </div>
+  <div class="sbody">
+    <div class="grid4">
+      <div class="box good">
+        <h5>Feasibility <span style="text-transform:none;letter-spacing:0;font-weight:400">— measured, not claimed</span></h5>
+        <ul>
+          <li><b>≤100 ms edge target already met on a CPU</b> — ~90 ms/tile, no GPU required</li>
+          <li>Whole stack on one 4-core VM — <span class="m">docker compose up</span>, 5 services</li>
+          <li>Worker ~250 MB RAM; scale with <span class="m">--scale worker=4</span> → ~40 tiles/s</li>
+          <li>Model 44.8 MB ONNX; runtime ~210 MB vs PyTorch 4.4 GB</li>
+          <li>Reference platform: Iver4 900 + EdgeTech 2205 + Jetson Orin NX 16 GB</li>
+        </ul>
+      </div>
+      <div class="box warn">
+        <h5>Limitations</h5>
+        <ul>
+          <li>Does not transfer to an unseen survey without fine-tuning</li>
+          <li><span class="m">ghost_net</span> trained on synthetic data — capability, not a field number</li>
+          <li>A detection is a search area (~±120 m), not a survey fix</li>
+          <li><span class="m">crab_pot</span> below the usable bar → filtered from the product</li>
+          <li>INT8 quantization collapsed → excluded, FP32/FP16 only</li>
+        </ul>
+      </div>
+      <div class="box crit">
+        <h5>Challenges</h5>
+        <ul>
+          <li>No public ghost-net-in-sonar dataset exists anywhere</li>
+          <li>Speckle is multiplicative — blurring destroys the signal</li>
+          <li>Rock clusters are exactly as bright as wrecks</li>
+          <li>Human experts agree only 50–60 % on wreck boundaries</li>
+          <li>No connectivity underwater — acoustic link only</li>
+        </ul>
+      </div>
+      <div class="box acc">
+        <h5>Solutions</h5>
+        <ul>
+          <li>Procedural generator with modelled acoustics for <span class="m">ghost_net</span></li>
+          <li>Lee MMSE filter — smooths flat seabed, preserves edges</li>
+          <li><b>Shadow-geometry check</b> rejects objects sitting flush</li>
+          <li>Benchmark against published SOTA; report calibrated metrics at the operating point</li>
+          <li>Detect <em>on the vehicle</em>; bulk-sync on recovery</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="strip" style="margin:16px 0 0">
+      <span class="lbl">deployment path</span>
+      <span><b>1</b> Demo — one VM, compose</span>
+      <span>→</span>
+      <span><b>2</b> Pilot — managed DB + CDN public map</span>
+      <span>→</span>
+      <span><b>3</b> Field — Jetson FP16 / TensorRT</span>
+      <span>→</span>
+      <span><b>4</b> Loop — fine-tune from confirmed detections</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 5 ══════════════ -->
+<div class="slide">
+  <div class="sbar">
+    <span class="num">5</span>
+    <span class="tt">IMPACT AND BENEFITS</span>
+    <span class="job">job · "this reaches real people"</span>
+  </div>
+  <div class="sbody">
+    <div class="grid2">
+      <div class="box">
+        <h5>Impacts</h5>
+        <ul>
+          <li><b>Survey throughput</b> — one vessel maps <b>~130 hectares a day</b>, all of it reviewed by eye today. We filter the empty seafloor so analysts see only flagged segments.</li>
+          <li><b>Ghost-net recovery</b> — a lost net keeps fishing for <b>decades</b>. Geolocated detections turn that into an extraction mission.</li>
+          <li><b>Navigational safety</b> — pipelines, wrecks and suspected ordnance located and classified with a score an operator can trust.</li>
+          <li><b>Public access</b> — a mobile map with live GPS puts confirmed hazards in the hands of fishers, not just survey rooms.</li>
+          <li><b>Auditability</b> — every detection carries a <span class="m">ping_id</span> back to the exact sonar ping.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h5>Benefits</h5>
+        <ul>
+          <li><b>Analyst time</b> → review flagged segments, not kilometres of grey imagery</li>
+          <li><b>Calibrated 0–100 %</b> → operators set their own risk threshold, and the number means what it says</li>
+          <li><b>Offline / edge</b> → runs onboard with no cloud and no GPU</li>
+          <li><b>JSON / CSV / GeoJSON</b> → drops into existing GIS workflows unchanged</li>
+          <li><b>Human-in-the-loop</b> → confirmations become training data; accuracy improves per operator</li>
+          <li><b>Environmental</b> → faster ghost-net removal directly reduces bycatch and gear loss</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="box sig">
+        <h5>Research insights <span style="text-transform:none;letter-spacing:0;font-weight:400">— cite these, with sources on the slide</span></h5>
+        <ul>
+          <li>Human annotators agree only <b>50–60 %</b> on SSS wreck boundaries — <em>SW-Net, Sensors 2026</em></li>
+          <li>GhostNetZero reached <b>90–94 %</b> ghost-net detection on Baltic &amp; Puget Sound data — <em>Microsoft AI for Good / WWF</em></li>
+          <li>Automated pipelines process a survey in <b>~10 %</b> of survey time — same-day recovery tasking — <em>GhostVision, JMSE 2026</em></li>
+          <li>2026 SOTA on AI4Shipwrecks is <b>0.755</b> mAP@50; vanilla YOLOv8 baseline <b>0.716</b> — <em>DFSE-YOLO, Sci. Rep. 2026</em></li>
+        </ul>
+      </div>
+      <div class="box">
+        <h5>Target users <span style="text-transform:none;letter-spacing:0;font-weight:400">— draw as a hub-and-spoke</span></h5>
+        <ul>
+          <li>NIOT / MoES survey teams</li>
+          <li>Fishers &amp; small-boat operators</li>
+          <li>Ghost-net recovery NGOs</li>
+          <li>Coastal &amp; port authorities</li>
+          <li>Divers &amp; salvage operators</li>
+          <li>Marine researchers</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="dspec">
+      <h5>why the citations matter here</h5>
+      <p>ZENFLOW's strongest single move was a <em>Research Insights</em> box with sourced statistics. It
+      signals "we read the field" in four lines. Yours are better than theirs — the 50–60 % annotator
+      ceiling is the number that reframes your shipwreck score from <em>low</em> to <em>at the limit of
+      the task</em>, and it lands before an evaluator can form the wrong impression.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 6 ══════════════ -->
+<div class="slide">
+  <div class="sbar">
+    <span class="num">6</span>
+    <span class="tt">RESEARCH AND REFERENCES</span>
+    <span class="job">job · "they did the reading" — you win this slide outright</span>
+  </div>
+  <div class="sbody">
+    <div class="grid2">
+      <div class="box">
+        <h5>Research — 12 sources reviewed</h5>
+        <ul>
+          <li style="padding-left:0"><b style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)">AI4Shipwrecks benchmarks — the dataset we train on</b></li>
+          <li><b>SW-Net</b> — Direction-Aware Deep Learning for Shipwreck Segmentation in SSS · <em>Sensors</em> 2026</li>
+          <li><b>DFSE-YOLO</b> — Deep Feature Selective Enhancement for Shipwreck Detection · <em>Scientific Reports</em> 2026</li>
+          <li style="padding-left:0"><b style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)">SSS detection &amp; evaluation methodology</b></li>
+          <li><b>Transformer-YOLOv5</b> — Real-Time Underwater Maritime Object Detection in SSS · <em>Remote Sensing</em> 2021</li>
+          <li><b>GhostVision</b> — Low-cost sonar + AI for derelict crab pots · <em>JMSE</em> 2026</li>
+          <li><b>GhostNetZero</b> — AI for marine ghost nets · <em>Microsoft AI for Good / WWF</em></li>
+          <li style="padding-left:0"><b style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)">Small-data &amp; transfer learning for sonar</b></li>
+          <li><b>Qin et al.</b> — Optimizing Sediment Classification of Small SSS Images · <em>IEEE Access</em> 2021</li>
+          <li><b>Du et al.</b> — Investigation of Pre-Training Datasets · <em>Remote Sensing</em> 2023</li>
+          <li><b>Du et al.</b> — Recognition of Underwater Engineering Structures · <em>JMSE</em> 2025</li>
+          <li><b>Yu et al.</b> — Subaqueous debris-flow deposits via deep transfer learning</li>
+          <li><b>Jiang et al.</b> — Improved YOLOv8 for Marine Debris · <em>JMSE</em> 2024</li>
+          <li><b>Cuff et al.</b> — Coarse-graining linear transect data · 2023</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="box">
+          <h5>References — data sources</h5>
+          <ul>
+            <li><b>AI4Shipwrecks</b> — 286 labelled SSS images, 28 wreck sites, expert-annotated</li>
+            <li><b>SubPipeMini2</b> — pipeline survey strips</li>
+            <li><b>Roboflow side-scan-sonar</b> — ship + plane</li>
+            <li><b>Kaggle sonar-mine</b> — MILCO + NonMILCO contacts</li>
+            <li><b>HuggingFace SSS crab-pot set</b></li>
+            <li><b>AURORA (JC125 / M87)</b> — navigation + XTF for geotag validation</li>
+          </ul>
+        </div>
+        <div class="box acc" style="margin-top:14px">
+          <h5>Project links <span style="text-transform:none;letter-spacing:0;font-weight:400">— hyperlink these as [1] [2] [3] on slides 2–3</span></h5>
+          <ul>
+            <li><b>[1] Code</b> — <span class="m">github.com/Rehan9599/Sonar-Drishti</span></li>
+            <li><b>[2] Trained model</b> — <span class="m">huggingface.co/rehan9599/drishti-detector</span></li>
+            <li><b>[3] Full technical documentation</b> — <span class="m">&lt;published artifact URL&gt;</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="dspec">
+      <h5>the technique that beats the 6-slide limit</h5>
+      <p>PARADOX put superscript <code>[1][2][3][4]</code> on slides 2–3, every one hyperlinked to a
+      detailed external doc. ZENFLOW used "DETAILED WORKFLOW (CLICK ME)". Do the same with your three
+      URLs — that is how 100 KB of real documentation legitimately enters a six-slide submission, and it
+      quietly tells the evaluator there is a lot more behind this than six slides.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ closing ══════════════ -->
+
+<div class="note crit">
+  <h4>Cut these — they are what the other 499 decks are made of</h4>
+  <p><strong>Logo soup.</strong> One small row on slide 3, not a quarter of the slide. It differentiates nothing.
+  &nbsp;·&nbsp; <strong>The generic five-box pipeline.</strong> Yours must show mechanism — the geometry
+  feedback and the review bands. &nbsp;·&nbsp; <strong>Buzzwords.</strong> No "cutting-edge",
+  "revolutionary", "state-of-the-art AI"; specific numbers do that job far better.
+  &nbsp;·&nbsp; <strong>Any unqualified accuracy claim.</strong> Next to a calibrated one it reads as naive,
+  and 490 decks will have one.</p>
+</div>
+
+<div class="note">
+  <h4>Register to write in</h4>
+  <p>The template asks for an <em>idea</em>, and you have a working prototype — that is an advantage, not a
+  conflict. Write in the voice of <strong>"this is our approach, and we have already validated it"</strong>,
+  never as a finished report. Every number on the deck should be traceable to a held-out measurement, and
+  every limitation should arrive with its remedy attached.</p>
+  <p>One line worth memorising, because it is the whole submission compressed: <em>a rock cluster is as
+  bright as a shipwreck — only one of them casts a shadow, and we can compute how long it should be.</em></p>
+</div>
+
+<footer>
+  DRISHTI · idea-submission build sheet · SIH 2026 · Problem Statement 26057<br>
+  every metric here is from the held-out 850-tile test set at standard protocol — see docs/METRICS_PROTOCOL.md<br>
+  code <a href="https://github.com/Rehan9599/Sonar-Drishti">github.com/Rehan9599/Sonar-Drishti</a> ·
+  weights <a href="https://huggingface.co/rehan9599/drishti-detector">huggingface.co/rehan9599/drishti-detector</a>
+</footer>
+
+</div>
+
+</body>
+</html>

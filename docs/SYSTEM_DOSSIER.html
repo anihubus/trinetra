@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>DRISHTI System Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    color-scheme:light;
+    --ground:#edf1f2; --surface:#fbfcfd; --sunk:#e3e9ea; --rule:#d3dbdd; --rule-firm:#b8c4c7;
+    --ink:#0f181c; --ink-2:#44555c; --muted:#78888e;
+    --accent:#0d7490; --accent-deep:#0a5567; --accent-wash:#dceef2;
+    --signal:#bd6108; --signal-wash:#f7e9d8;
+    --good:#146c43; --good-wash:#dcefe3;
+    --warn:#96620c; --warn-wash:#f5eada;
+    --crit:#ab2317; --crit-wash:#f6e0dd;
+    --lift:0 1px 2px rgba(15,24,28,.05), 0 12px 28px -18px rgba(15,24,28,.22);
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#070d10; --surface:#101a1e; --sunk:#0b1316; --rule:#223136; --rule-firm:#35474e;
+    --ink:#e8f1f3; --ink-2:#a3b3b9; --muted:#75868c;
+    --accent:#3aafc6; --accent-deep:#7fd2e2; --accent-wash:#0d2b33;
+    --signal:#e0913c; --signal-wash:#2e1f0e;
+    --good:#43c176; --good-wash:#0f2c1b;
+    --warn:#d9a13a; --warn-wash:#2d240f;
+    --crit:#e2685c; --crit-wash:#331816;
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -20px rgba(0,0,0,.8);
+  }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --ground:#070d10; --surface:#101a1e; --sunk:#0b1316; --rule:#223136; --rule-firm:#35474e;
+    --ink:#e8f1f3; --ink-2:#a3b3b9; --muted:#75868c;
+    --accent:#3aafc6; --accent-deep:#7fd2e2; --accent-wash:#0d2b33;
+    --signal:#e0913c; --signal-wash:#2e1f0e;
+    --good:#43c176; --good-wash:#0f2c1b;
+    --warn:#d9a13a; --warn-wash:#2d240f;
+    --crit:#e2685c; --crit-wash:#331816;
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -20px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.65;
+       -webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  .shell{max-width:1000px;margin:0 auto;padding:0 28px}
+  .prose{max-width:66ch}
+  p{margin:14px 0}
+  strong{font-weight:600}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.84em;background:var(--sunk);
+       padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+
+  h1,h2,h3,h4{font-family:"Archivo",system-ui,sans-serif;text-wrap:balance;margin:0}
+  h1{font-size:clamp(2.2rem,5.4vw,3.5rem);line-height:1.03;letter-spacing:-.028em;font-weight:700}
+  h2{font-size:clamp(1.45rem,3vw,1.9rem);line-height:1.13;letter-spacing:-.018em;font-weight:600}
+  h3{font-size:1.12rem;font-weight:600;letter-spacing:-.008em;margin:34px 0 4px}
+  h4{font-size:.95rem;font-weight:600;margin:0 0 6px}
+
+  .cover{padding:72px 0 32px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.2em;
+          text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .kicker::after{content:"";flex:1;height:1px;background:var(--rule-firm)}
+  .standfirst{font-size:1.2rem;line-height:1.55;color:var(--ink-2);max-width:62ch;margin:20px 0 0}
+
+  .hmg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;
+       background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin:36px 0 0}
+  .hm{background:var(--surface);padding:15px 17px}
+  .hm .v{font-family:"Archivo",sans-serif;font-size:1.65rem;font-weight:700;letter-spacing:-.02em;
+         line-height:1.05;font-variant-numeric:tabular-nums}
+  .hm .k{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;
+         text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .hm.accent .v{color:var(--accent)}
+  .hm.signal .v{color:var(--signal)}
+
+  section{padding:44px 0 0}
+  .sechead{display:flex;align-items:baseline;gap:14px;border-top:2px solid var(--ink);
+           padding-top:16px;margin-bottom:6px}
+  .sechead .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);
+              letter-spacing:.14em;flex:none;padding-top:5px}
+  .lede{font-size:1.05rem;color:var(--ink-2);max-width:64ch;margin:10px 0 0}
+
+  figure{margin:30px 0;background:var(--surface);border:1px solid var(--rule);
+         border-radius:12px;padding:24px 24px 16px;box-shadow:var(--lift)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink);overflow:visible}
+  .figtitle{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+            text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+  figcaption{font-size:14px;line-height:1.55;color:var(--ink-2);margin-top:16px;max-width:72ch;
+             border-top:1px solid var(--rule);padding-top:12px}
+  svg text{font-family:"Archivo",sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .t1{fill:var(--ink);font-size:13px}
+  .t2{fill:var(--ink-2);font-size:11.5px}
+  .t3{fill:var(--muted);font-size:10px}
+
+  .tw{overflow-x:auto;margin:22px 0;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-family:"Archivo",sans-serif;font-size:13.5px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--sunk);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--ink-2);font-weight:600;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  td.n,th.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tbody td:first-child{font-weight:500}
+  tr.spot td{background:var(--accent-wash)}
+  tr.dim td{color:var(--muted)}
+
+  .pill{display:inline-block;font-family:"Archivo",sans-serif;font-size:10.5px;font-weight:600;
+        padding:2px 8px;border-radius:3px;white-space:nowrap}
+  .p-good{color:var(--good);background:var(--good-wash)}
+  .p-warn{color:var(--warn);background:var(--warn-wash)}
+  .p-crit{color:var(--crit);background:var(--crit-wash)}
+  .p-acc{color:var(--accent-deep);background:var(--accent-wash)}
+  .p-flat{color:var(--ink-2);background:var(--sunk)}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
+        border-radius:0 9px 9px 0;padding:17px 21px;margin:24px 0;box-shadow:var(--lift)}
+  .note.finding{border-left-color:var(--signal)}
+  .note.good{border-left-color:var(--good)}
+  .note.warn{border-left-color:var(--warn)}
+  .note.crit{border-left-color:var(--crit)}
+  .note h4{font-family:"Archivo",sans-serif}
+  .note p{margin:0;font-size:15.5px}
+  .note p + p{margin-top:9px}
+
+  ul.clean{list-style:none;padding:0;margin:16px 0}
+  ul.clean li{padding:9px 0 9px 24px;position:relative;border-bottom:1px solid var(--rule);font-size:15.5px}
+  ul.clean li:last-child{border-bottom:0}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:17px;width:7px;height:7px;
+                      background:var(--accent);border-radius:1px}
+
+  pre.code{margin:16px 0;background:var(--surface);border:1px solid var(--rule);border-radius:9px;
+           padding:15px 18px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+           line-height:1.7;color:var(--ink-2);box-shadow:var(--lift)}
+  pre.code .c{color:var(--muted)}
+
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:24px 0}
+  .mode{background:var(--surface);border:1px solid var(--rule);border-radius:11px;padding:18px 20px;
+        box-shadow:var(--lift)}
+  .mode .tag{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
+             text-transform:uppercase;color:var(--accent);margin-bottom:7px}
+  .mode h4{font-size:1.05rem;margin-bottom:6px}
+  .mode p{font-size:14.5px;margin:0;color:var(--ink-2)}
+
+  footer{border-top:2px solid var(--ink);margin-top:56px;padding:22px 0 64px;
+         font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);line-height:1.8}
+  a{color:var(--accent-deep)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+</style>
+</head>
+<body>
+
+
+<div class="shell">
+
+<header class="cover">
+  <p class="kicker">DRISHTI &nbsp;·&nbsp; SIH 2026 &nbsp;·&nbsp; PS 26057 &nbsp;·&nbsp; system &amp; deployment dossier</p>
+  <h1>From acoustic echo<br>to a pin on a phone</h1>
+  <p class="standfirst">One system, three layers: a detector that reads side-scan sonar, a vehicle
+  that carries it to the seabed, and a web platform that turns what it finds into something a
+  fisher, a diver, or a recovery crew can act on. This document integrates the model dossier, the
+  AUV &amp; edge reference report, and the deployment plan into a single build order.</p>
+
+  <div class="hmg">
+    <div class="hm accent"><div class="v">0.641</div><div class="k">mAP@50, held-out test</div></div>
+    <div class="hm"><div class="v">~90 ms</div><div class="k">per tile, CPU</div></div>
+    <div class="hm signal"><div class="v">3</div><div class="k">operating modes</div></div>
+    <div class="hm"><div class="v">5</div><div class="k">compose services</div></div>
+    <div class="hm"><div class="v">0 GB</div><div class="k">PyTorch in production</div></div>
+  </div>
+</header>
+
+<!-- ══════════ 01 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">01</span><h2>The system in one view</h2></div>
+  <div class="prose">
+    <p class="lede">DRISHTI is three layers that meet at two narrow interfaces. Each layer can be
+    built, tested and replaced without touching the others — which is the whole point of drawing
+    the seams where we did.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 1 — the three layers and the two interfaces between them</div>
+    <svg viewBox="0 0 900 340" role="img" aria-label="Three stacked layers. The model layer contains preprocessing, YOLOv8s detection, confidence calibration and geotagging, exposed as a single Python function run_pipeline. The platform layer is the Iver4 900 AUV carrying an EdgeTech 2205 sonar and a Jetson Orin NX edge computer. The web layer is a Django API with a Celery worker, a PostgreSQL database, an operator dashboard and a public debris map. The model crosses into the platform as an FP16 TensorRT engine and into the web layer as a Python import inside the Celery worker.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ars" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+
+      <!-- MODEL layer -->
+      <rect x="10" y="16" width="880" height="86" rx="10" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="28" y="38" class="t3 m" fill="var(--accent-deep)">LAYER 1 · MODEL</text>
+      <g class="t2">
+        <rect x="28" y="48" width="148" height="40" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="102" y="66" text-anchor="middle" class="t2">M0 preprocess</text>
+        <text x="102" y="80" text-anchor="middle" class="t3 m">Lee + CLAHE</text>
+
+        <rect x="188" y="48" width="148" height="40" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="262" y="66" text-anchor="middle" class="t2">M1 detect</text>
+        <text x="262" y="80" text-anchor="middle" class="t3 m">YOLOv8s · 4 classes</text>
+
+        <rect x="348" y="48" width="148" height="40" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="422" y="66" text-anchor="middle" class="t2">M2 confidence</text>
+        <text x="422" y="80" text-anchor="middle" class="t3 m">gate + calibrate</text>
+
+        <rect x="508" y="48" width="148" height="40" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="582" y="66" text-anchor="middle" class="t2">M3 geotag</text>
+        <text x="582" y="80" text-anchor="middle" class="t3 m">px → lat / lon</text>
+      </g>
+      <rect x="676" y="44" width="196" height="48" rx="7" fill="var(--surface)" stroke="var(--accent)" stroke-dasharray="4 3"/>
+      <text x="774" y="63" text-anchor="middle" class="t2">exposed as</text>
+      <text x="774" y="79" text-anchor="middle" class="t3 m">run_pipeline()</text>
+
+      <!-- interfaces -->
+      <line x1="300" y1="102" x2="300" y2="144" stroke="var(--signal)" stroke-width="1.6"
+            stroke-dasharray="4 3" marker-end="url(#ars)"/>
+      <text x="312" y="126" class="t3" fill="var(--signal)">FP16 TensorRT engine</text>
+      <line x1="640" y1="102" x2="640" y2="238" stroke="var(--accent)" stroke-width="1.6"
+            marker-end="url(#ar)"/>
+      <text x="652" y="126" class="t3" fill="var(--accent-deep)">Python import</text>
+
+      <!-- PLATFORM layer -->
+      <rect x="10" y="146" width="560" height="84" rx="10" fill="var(--signal-wash)" stroke="var(--signal)"/>
+      <text x="28" y="168" class="t3 m" fill="var(--signal)">LAYER 2 · PLATFORM (AUV)</text>
+      <g>
+        <rect x="28" y="178" width="160" height="40" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="108" y="196" text-anchor="middle" class="t2">Iver4 900</text>
+        <text x="108" y="210" text-anchor="middle" class="t3 m">300 m · 8–10 h survey</text>
+
+        <rect x="200" y="178" width="160" height="40" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="280" y="196" text-anchor="middle" class="t2">EdgeTech 2205</text>
+        <text x="280" y="210" text-anchor="middle" class="t3 m">side-scan sonar</text>
+
+        <rect x="372" y="178" width="180" height="40" rx="6" fill="var(--surface)" stroke="var(--signal)"/>
+        <text x="462" y="196" text-anchor="middle" class="t2">Jetson Orin NX 16 GB</text>
+        <text x="462" y="210" text-anchor="middle" class="t3 m">on-vehicle inference</text>
+      </g>
+
+      <!-- WEB layer -->
+      <rect x="10" y="240" width="880" height="88" rx="10" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="28" y="262" class="t3 m">LAYER 3 · WEB</text>
+      <g>
+        <rect x="28" y="272" width="130" height="42" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="93" y="290" text-anchor="middle" class="t2">Django API</text>
+        <text x="93" y="304" text-anchor="middle" class="t3 m">REST + WebSocket</text>
+
+        <rect x="170" y="272" width="130" height="42" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+        <text x="235" y="290" text-anchor="middle" class="t2">Celery worker</text>
+        <text x="235" y="304" text-anchor="middle" class="t3 m">runs the model</text>
+
+        <rect x="312" y="272" width="120" height="42" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="372" y="290" text-anchor="middle" class="t2">PostgreSQL</text>
+        <text x="372" y="304" text-anchor="middle" class="t3 m">+ Redis</text>
+
+        <rect x="444" y="272" width="150" height="42" rx="6" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="519" y="290" text-anchor="middle" class="t2">Operator dashboard</text>
+        <text x="519" y="304" text-anchor="middle" class="t3 m">upload · map · review</text>
+
+        <rect x="606" y="272" width="266" height="42" rx="6" fill="var(--surface)" stroke="var(--signal)"/>
+        <text x="739" y="290" text-anchor="middle" class="t2">Public debris map <tspan class="t3">(planned)</tspan></text>
+        <text x="739" y="304" text-anchor="middle" class="t3 m">mobile PWA · live GPS</text>
+      </g>
+    </svg>
+    <figcaption>Two interfaces, both deliberately narrow. Into the <strong>web layer</strong> the model
+    crosses as a Python import — <code>run_pipeline()</code> — inside the Celery worker, so there is no
+    ML microservice and no network hop per tile. Into the <strong>platform</strong> it crosses as a
+    compiled FP16 TensorRT engine on the Jetson. Retraining changes the weights behind both interfaces
+    and nothing else.</figcaption>
+  </figure>
+</section>
+
+<!-- ══════════ 02 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">02</span><h2>What the model actually does</h2></div>
+  <div class="prose">
+    <p class="lede">Condensed from the model dossier. YOLOv8s fine-tuned from COCO on 6,405
+    side-scan tiles assembled from six real surveys plus procedural synthesis; 120 epochs, best
+    checkpoint at epoch 91.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Class</th><th class="n">AP@50 <span style="font-weight:400;text-transform:none">(std)</span></th><th class="n">Precision <span style="font-weight:400;text-transform:none">(op)</span></th><th class="n">Recall <span style="font-weight:400;text-transform:none">(op)</span></th><th>Read</th></tr></thead>
+      <tbody>
+        <tr class="spot"><td>submarine_pipeline</td><td class="n">0.994</td><td class="n">0.994</td><td class="n">0.989</td><td><span class="pill p-good">production-grade</span></td></tr>
+        <tr><td>ghost_net</td><td class="n">0.995</td><td class="n">1.000</td><td class="n">1.000</td><td><span class="pill p-warn">synthetic training data</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="n">0.517</td><td class="n">0.556</td><td class="n">0.488</td><td><span class="pill p-acc">real-data ceiling</span></td></tr>
+        <tr><td>shipwreck</td><td class="n">0.370</td><td class="n">0.672</td><td class="n">0.347</td><td><span class="pill p-acc">at published SOTA</span></td></tr>
+        <tr class="dim"><td>crab_pot</td><td class="n">0.329</td><td class="n">0.447</td><td class="n">0.324</td><td><span class="pill p-crit">filtered from product</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>Overall <strong class="mono">mAP@50 0.641</strong> · <strong class="mono">mAP@50-95 0.459</strong>
+    at the standard protocol, and <strong class="mono">precision 0.734</strong> ·
+    <strong class="mono">recall 0.629</strong> at the deployed operating threshold. Confidence is
+    per-class Platt-calibrated — expected calibration error <strong class="mono">0.052 → 0.037</strong> —
+    so the percentage an operator sees means what it says.</p>
+
+    <p>For context: on AI4Shipwrecks, the dataset behind our shipwreck class, the 2026 state of the art
+    is 0.755 and a vanilla YOLOv8 baseline is 0.716 — both single-class. Human annotators agree with
+    each other only 50–60&nbsp;% on where a wreck's boundary lies in an acoustic image. Our four-class
+    model on a deliberately harder overlapping split sits inside that band.</p>
+  </div>
+
+  <h3 class="prose">Three limits that shape every deployment decision below</h3>
+  <ul class="clean prose">
+    <li><strong>It does not transfer to an unseen survey without fine-tuning.</strong> Near-zero
+    detections on an unfamiliar instrument and seabed. This is documented literature behaviour, and the
+    remedy — fine-tune on a small labelled sample of the operator's own sonar — is designed into the
+    review loop.</li>
+    <li><strong>A detection is a search area, not a survey fix.</strong> The tow-fish position recovers
+    to &lt;1 m, but detection position also depends on across-track scale; two navigation paths placed
+    the same target ~122 m apart. Everything downstream must carry an uncertainty radius.</li>
+    <li><strong>ghost_net is trained on synthetic data.</strong> No public real ghost-net-in-sonar
+    dataset exists. Treat 0.995 as proof of capability, not field performance.</li>
+  </ul>
+</section>
+
+<!-- ══════════ 03 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">03</span><h2>The platform — vehicle, sonar, edge computer</h2></div>
+  <div class="prose">
+    <p class="lede">From the AUV &amp; Edge Computing reference report. One rule is carried through
+    unchanged: <strong>published manufacturer specifications and our engineering assumptions are never
+    presented as the same kind of fact.</strong></p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Component</th><th>Reference</th><th>Key figures</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>AUV</td><td>L3Harris Iver4 900</td><td>300 m depth · &gt;3 kn transit, &gt;5 kn sprint · 20+ h NiMH / 40+ h Li-ion · 1 TB SSD + 8 TB DataMag · GPS surfaced, DVL + INS submerged</td><td><span class="pill p-good">published</span></td></tr>
+        <tr><td>Sonar</td><td>EdgeTech 2205</td><td>configurable AUV/UUV/ROV payload; marine-debris search is a listed application; ~75 m @ 850 kHz, ~35 m @ 1600 kHz</td><td><span class="pill p-good">published</span></td></tr>
+        <tr><td>— frequency</td><td>850 / 1600 kHz</td><td>the published Iver4 900 sheet lists a 2205B at <em>600</em>/1600 kHz</td><td><span class="pill p-warn">our proposed config</span></td></tr>
+        <tr class="spot"><td>Edge computer</td><td>Jetson Orin NX 16 GB</td><td>16 GB LPDDR5 · 1024 CUDA cores · 32 Tensor Cores · 8-core Cortex-A78AE · up to 157 TOPS INT8</td><td><span class="pill p-acc">our recommendation</span></td></tr>
+        <tr><td>Survey scenario</td><td>8–10 h</td><td>well inside published endurance</td><td><span class="pill p-acc">planning assumption</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p><strong>Why Orin NX 16 GB rather than a Nano.</strong> YOLOv8s is small, but the edge computer
+    also carries preprocessing, navigation-data association, the shadow-geometry check, tile buffering
+    and mission logging — plus headroom for the persistence filter and any future model. A Nano stays
+    on the list as a lower-power alternative to benchmark, not as the default.</p>
+  </div>
+
+  <h3 class="prose">The latency budget</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Metric</th><th class="n">Value</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Assumed cadence</td><td class="n">5 Hz</td><td>one processing unit every 200 ms — <em>our assumption</em>, not a verified 2205 output rate</td></tr>
+        <tr><td>Hard ceiling</td><td class="n">&lt; 200 ms</td><td>below this we keep up with the sensor</td></tr>
+        <tr class="spot"><td>Engineering target</td><td class="n">≤ 100 ms</td><td>~2× headroom for jitter, logging, buffering</td></tr>
+        <tr><td>Measured baseline</td><td class="n">~90 ms</td><td>FP32 ONNX on a development CPU — already inside the target <em>before</em> any GPU</td></tr>
+        <tr><td>Deployment target</td><td class="n">FP16 + TensorRT</td><td>must be measured on the Orin NX; not yet done</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note finding">
+    <h4>Why the CPU baseline matters more than it looks</h4>
+    <p>We already meet the ≤100 ms engineering target on a laptop CPU with no GPU at all. The Jetson is
+    therefore about <em>headroom and power efficiency</em>, not about making the system feasible. That
+    is a far more comfortable position than needing the accelerator to hit spec — and it means a
+    degraded-mode fallback to CPU-only inference remains viable.</p>
+    <p><strong>INT8 stays excluded.</strong> Static post-training quantization collapsed the detector to
+    0.00 precision and recall on every class, and ran <em>slower</em> than FP32 on CPU. FP16 is the
+    Jetson path; the broken INT8 file is published only so the result is reproducible.</p>
+  </div>
+</section>
+
+<!-- ══════════ 04 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">04</span><h2>Three operating modes</h2></div>
+  <div class="prose">
+    <p class="lede">The same model and the same report schema serve three different situations. Only
+    the first exists today; the other two are what this dossier plans.</p>
+  </div>
+
+  <div class="modes">
+    <div class="mode">
+      <div class="tag">Mode A · built</div>
+      <h4>Demo dashboard</h4>
+      <p>Upload a sonar file from a browser. Detection runs on the server, results stream back live,
+      an analyst reviews and exports. This is the SIH demonstration.</p>
+    </div>
+    <div class="mode">
+      <div class="tag">Mode B · designed</div>
+      <h4>Live AUV survey</h4>
+      <p>The model runs on the Jetson inside the vehicle. No connectivity is assumed. Results are
+      stored aboard and synced in bulk on recovery.</p>
+    </div>
+    <div class="mode">
+      <div class="tag">Mode C · proposed</div>
+      <h4>Public debris map</h4>
+      <p>Confirmed hazards published to a mobile map with live GPS, so the people who work these
+      waters can see what is around them.</p>
+    </div>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 2 — where the model runs, and what crosses the gap, in each mode</div>
+    <svg viewBox="0 0 900 300" role="img" aria-label="Two architectures compared side by side. In demo mode a browser uploads a sonar file over HTTP to a Django API, which queues a job in Redis; a Celery worker imports the model and runs inference, writes to PostgreSQL, and pushes live per-tile results back to the browser over WebSocket. In live AUV mode the sonar feeds a Jetson Orin NX inside the vehicle which runs the model on board and writes to local mission storage; only a tiny contact summary can cross the acoustic link during the dive, and the full data set transfers over ethernet or a removable drive after recovery, at which point the ship server ingests it into the same database.">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="a2c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--crit)"/>
+        </marker>
+        <marker id="a2g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--good)"/>
+        </marker>
+      </defs>
+
+      <text x="14" y="16" class="t2 m" fill="var(--accent-deep)">MODE A · DEMO (server-side)</text>
+      <line x1="14" y1="24" x2="430" y2="24" stroke="var(--rule-firm)"/>
+
+      <rect x="14" y="40" width="96" height="44" rx="7" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="62" y="60" text-anchor="middle" class="t2">browser</text>
+      <text x="62" y="74" text-anchor="middle" class="t3 m">upload</text>
+
+      <rect x="132" y="40" width="96" height="44" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="180" y="60" text-anchor="middle" class="t2">Django</text>
+      <text x="180" y="74" text-anchor="middle" class="t3 m">queue job</text>
+
+      <rect x="250" y="32" width="180" height="60" rx="7" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="340" y="52" text-anchor="middle" class="t2">Celery worker</text>
+      <text x="340" y="67" text-anchor="middle" class="t3 m">imports run_pipeline()</text>
+      <text x="340" y="82" text-anchor="middle" class="t3">model runs HERE</text>
+
+      <line x1="110" y1="62" x2="130" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#a2)"/>
+      <line x1="228" y1="62" x2="248" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#a2)"/>
+      <path d="M340 92 C 340 120 62 110 62 88" fill="none" stroke="var(--accent)" stroke-width="1.4"
+            stroke-dasharray="4 3" marker-end="url(#a2)"/>
+      <text x="200" y="118" text-anchor="middle" class="t3" fill="var(--accent-deep)">WebSocket · live per-tile results</text>
+
+      <!-- divider -->
+      <line x1="452" y1="8" x2="452" y2="292" stroke="var(--rule)"/>
+
+      <text x="470" y="16" class="t2 m" fill="var(--signal)">MODE B · LIVE AUV (on-vehicle)</text>
+      <line x1="470" y1="24" x2="886" y2="24" stroke="var(--rule-firm)"/>
+
+      <rect x="470" y="40" width="92" height="44" rx="7" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="516" y="60" text-anchor="middle" class="t2">2205 sonar</text>
+      <text x="516" y="74" text-anchor="middle" class="t3 m">waterfall</text>
+
+      <rect x="580" y="32" width="150" height="60" rx="7" fill="var(--signal-wash)" stroke="var(--signal)"/>
+      <text x="655" y="52" text-anchor="middle" class="t2">Jetson Orin NX</text>
+      <text x="655" y="67" text-anchor="middle" class="t3 m">FP16 TensorRT</text>
+      <text x="655" y="82" text-anchor="middle" class="t3">model runs HERE</text>
+
+      <rect x="748" y="40" width="138" height="44" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="817" y="60" text-anchor="middle" class="t2">mission storage</text>
+      <text x="817" y="74" text-anchor="middle" class="t3 m">1 TB SSD + DataMag</text>
+
+      <line x1="562" y1="62" x2="578" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#a2)"/>
+      <line x1="730" y1="62" x2="746" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#a2)"/>
+
+      <!-- acoustic constraint -->
+      <rect x="580" y="118" width="306" height="46" rx="7" fill="var(--crit-wash)" stroke="var(--crit)" stroke-dasharray="4 3"/>
+      <text x="733" y="137" text-anchor="middle" class="t2" fill="var(--crit)">acoustic modem — contact summaries only</text>
+      <text x="733" y="152" text-anchor="middle" class="t3">~80 bytes/detection · imagery cannot cross</text>
+      <line x1="655" y1="92" x2="655" y2="116" stroke="var(--crit)" stroke-width="1.4" marker-end="url(#a2c)"/>
+
+      <!-- recovery -->
+      <rect x="580" y="190" width="306" height="44" rx="7" fill="var(--good-wash)" stroke="var(--good)"/>
+      <text x="733" y="209" text-anchor="middle" class="t2" fill="var(--good)">on recovery — bulk sync</text>
+      <text x="733" y="223" text-anchor="middle" class="t3">ethernet / removable DataMag → ship server</text>
+      <line x1="817" y1="84" x2="817" y2="188" stroke="var(--good)" stroke-width="1.4"
+            stroke-dasharray="5 4" marker-end="url(#a2g)"/>
+
+      <!-- shared DB -->
+      <rect x="250" y="248" width="400" height="44" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="450" y="267" text-anchor="middle" class="t2">same PostgreSQL · same DetectionRecord schema</text>
+      <text x="450" y="281" text-anchor="middle" class="t3 m">both modes converge here → dashboard, review queue, exports</text>
+      <path d="M340 92 C 300 180 300 220 340 246" fill="none" stroke="currentColor" stroke-width="1.3"
+            stroke-dasharray="3 3" marker-end="url(#a2)"/>
+      <path d="M660 234 C 640 240 600 244 560 248" fill="none" stroke="currentColor" stroke-width="1.3"
+            stroke-dasharray="3 3" marker-end="url(#a2)"/>
+    </svg>
+    <figcaption>The difference that matters is the <strong>red box</strong>. In demo mode a WebSocket
+    carries full results back in real time. Underwater there is no such channel — an acoustic modem
+    moves on the order of hundreds of bits per second, so imagery is out of the question and even a
+    full detection record is expensive. That constraint, not compute, is why detection must happen on
+    the vehicle.</figcaption>
+  </figure>
+
+  <div class="note warn">
+    <h4>Assumption to verify before quoting</h4>
+    <p>Acoustic modem throughput is <em>not</em> yet researched for our configuration. The
+    "~80 bytes/detection" figure above is a design target derived from a packed contact record
+    (class id, confidence, lat/lon, ping reference) — not a measured link budget. Treat it the same
+    way the reference report treats the 5 Hz cadence: a working assumption that sizes the design and
+    must be replaced with a measurement.</p>
+  </div>
+</section>
+
+<!-- ══════════ 05 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">05</span><h2>Mode A — the demo dashboard</h2></div>
+  <div class="prose">
+    <p class="lede">What we show at SIH, and the foundation everything else is built on. An operator
+    uploads a sonar file and watches detections appear on a map as each tile completes.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Screen</th><th>Does</th><th>Talks to</th></tr></thead>
+      <tbody>
+        <tr><td>Upload</td><td>drag a sonar image / log, optionally its XTF + navigation CSV; creates a job</td><td class="mono">POST /api/upload/</td></tr>
+        <tr><td>Live feed</td><td>per-tile detections stream in as the worker completes them; progress and running count</td><td class="mono">WS /ws/jobs/&lt;id&gt;/</td></tr>
+        <tr><td>Map</td><td>Leaflet; every detection as a pin with class, calibrated score, uncertainty radius</td><td class="mono">GET /api/detections/&lt;job&gt;/</td></tr>
+        <tr><td>Review queue</td><td>everything scored 30–80 % — analyst confirms or rejects; feeds the fine-tuning set</td><td class="mono">PATCH /api/detections/&lt;id&gt;/</td></tr>
+        <tr><td>Export</td><td>download the report as JSON, CSV or GeoJSON</td><td class="mono">GET /api/export/&lt;job&gt;/</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>The review bands are decided by the model layer, not the UI: <strong>≥ 80 %</strong>
+    auto-confirmed, <strong>30–80 %</strong> queued for a human, <strong>&lt; 30 %</strong> dropped
+    before it ever reaches the operator. That is what makes the queue short enough to actually work
+    through — and it is the same mechanism that feeds Mode C, since only analyst-confirmed detections
+    are ever published.</p>
+  </div>
+</section>
+
+<!-- ══════════ 06 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">06</span><h2>Mode C — the public debris map</h2></div>
+  <div class="prose">
+    <p class="lede">The point of detecting a ghost net is that somebody goes and removes it, or at
+    minimum stops losing gear on it. Detection that stays inside an operator console has not finished
+    the job.</p>
+
+    <p>A ghost net keeps fishing for decades after it is lost. A fisher who knows one is there avoids
+    it; a recovery NGO who knows where it is can go get it; a diver who knows a wreck's position can
+    plan around it. None of those people have access to a sonar console — they have a phone, on a
+    boat, often with no signal.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 3 — how a confirmed detection reaches a phone at sea</div>
+    <svg viewBox="0 0 900 260" role="img" aria-label="Data flow for the public map. Detections in the database are filtered by three gates: only analyst-confirmed records pass, protected shipwreck sites are withheld or fuzzed, and every published record carries an uncertainty radius rather than a precise point. The filtered set is served as cached GeoJSON from a public read-only endpoint through a CDN to a mobile progressive web app, which combines it with the phone's own GPS position to show nearby hazards, and caches the region for offline use at sea.">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="10" y="86" width="118" height="56" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="69" y="108" text-anchor="middle" class="t2">detections</text>
+      <text x="69" y="123" text-anchor="middle" class="t3 m">PostgreSQL</text>
+
+      <!-- gates -->
+      <rect x="152" y="30" width="196" height="168" rx="9" fill="var(--crit-wash)" stroke="var(--crit)"/>
+      <text x="250" y="50" text-anchor="middle" class="t2 m" fill="var(--crit)">PUBLICATION GATES</text>
+      <g>
+        <rect x="166" y="62" width="168" height="36" rx="5" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="250" y="78" text-anchor="middle" class="t3">1 · analyst_confirmed only</text>
+        <text x="250" y="91" text-anchor="middle" class="t3 m">never raw model output</text>
+
+        <rect x="166" y="106" width="168" height="36" rx="5" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="250" y="122" text-anchor="middle" class="t3">2 · heritage screen</text>
+        <text x="250" y="135" text-anchor="middle" class="t3 m">protected wrecks withheld</text>
+
+        <rect x="166" y="150" width="168" height="36" rx="5" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="250" y="166" text-anchor="middle" class="t3">3 · uncertainty radius</text>
+        <text x="250" y="179" text-anchor="middle" class="t3 m">area, never a bare pin</text>
+      </g>
+
+      <rect x="372" y="86" width="140" height="56" rx="8" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="442" y="105" text-anchor="middle" class="t2">public API</text>
+      <text x="442" y="120" text-anchor="middle" class="t3 m">GET /api/public/debris/</text>
+      <text x="442" y="134" text-anchor="middle" class="t3">read-only · GeoJSON</text>
+
+      <rect x="536" y="86" width="110" height="56" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="591" y="108" text-anchor="middle" class="t2">CDN cache</text>
+      <text x="591" y="123" text-anchor="middle" class="t3 m">edge, no auth</text>
+
+      <rect x="670" y="60" width="220" height="108" rx="9" fill="var(--signal-wash)" stroke="var(--signal)"/>
+      <text x="780" y="82" text-anchor="middle" class="t2">mobile PWA</text>
+      <text x="780" y="100" text-anchor="middle" class="t3 m">watchPosition() · Leaflet</text>
+      <text x="780" y="118" text-anchor="middle" class="t3">"what is around me"</text>
+      <text x="780" y="136" text-anchor="middle" class="t3">distance + bearing to nearest</text>
+      <text x="780" y="154" text-anchor="middle" class="t3 m" fill="var(--signal)">offline cache for use at sea</text>
+
+      <g stroke="currentColor" stroke-width="1.4" fill="none">
+        <line x1="128" y1="114" x2="150" y2="114" marker-end="url(#a3)"/>
+        <line x1="348" y1="114" x2="370" y2="114" marker-end="url(#a3)"/>
+        <line x1="512" y1="114" x2="534" y2="114" marker-end="url(#a3)"/>
+        <line x1="646" y1="114" x2="668" y2="114" marker-end="url(#a3)"/>
+      </g>
+
+      <rect x="670" y="192" width="220" height="42" rx="7" fill="var(--surface)" stroke="var(--rule)"/>
+      <text x="780" y="210" text-anchor="middle" class="t3">phone GPS never leaves the device</text>
+      <text x="780" y="224" text-anchor="middle" class="t3 m">bbox query only — no user tracking</text>
+      <line x1="780" y1="168" x2="780" y2="190" stroke="currentColor" stroke-width="1.2"
+            stroke-dasharray="3 3" marker-end="url(#a3)"/>
+    </svg>
+    <figcaption>Three gates stand between the database and the public. They exist because a false
+    positive on a public map is not a metric — it sends a real boat to a real place for nothing, and
+    a published wreck position can expose a protected site to looting.</figcaption>
+  </figure>
+
+  <h3 class="prose">What the page does</h3>
+  <ul class="clean prose">
+    <li><strong>Shows what is around you.</strong> The browser's geolocation API gives the phone's
+    position; the map centres there and loads confirmed hazards within the visible box. Nearest few are
+    listed with distance and bearing.</li>
+    <li><strong>Works without signal.</strong> A service worker caches the map tiles and the hazard
+    layer for a chosen region before departure. This is the feature that decides whether it is useful
+    at sea or just useful in port.</li>
+    <li><strong>Shows uncertainty honestly.</strong> Each hazard renders as a circle sized to its
+    positional confidence — never a pin implying metre accuracy we do not have.</li>
+    <li><strong>Optional proximity alert.</strong> A configurable radius warns when you are closing on
+    a known snag hazard.</li>
+    <li><strong>Reports back.</strong> A "seen / not there / recovered" control lets users close the
+    loop, feeding the same review queue an analyst works.</li>
+  </ul>
+
+  <h3 class="prose">The endpoint</h3>
+  <pre class="code"><span class="c"># public, unauthenticated, aggressively cached at the edge</span>
+GET /api/public/debris/?bbox=-8.1,50.3,-7.4,50.6
+GET /api/public/debris/?lat=50.39&amp;lon=-7.71&amp;radius_km=15
+
+<span class="c"># -> GeoJSON FeatureCollection, Leaflet-ready</span>
+{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "geometry": {"type": "Point", "coordinates": [-7.7132752, 50.3937068]},
+    "properties": {
+      "class_label": "ghost_net",
+      "confidence_score": 91.3,
+      "uncertainty_radius_m": 120,      <span class="c"># honest, from the nav-path spread</span>
+      "confirmed_at": "2026-09-02T10:14:33Z",
+      "status": "confirmed"             <span class="c"># confirmed | recovered | not_found</span>
+    }
+  }]
+}</pre>
+
+  <div class="note crit">
+    <h4>Three governance decisions to make before this goes live</h4>
+    <p><strong>Shipwrecks are frequently protected heritage.</strong> Publishing exact positions can
+    enable looting of archaeological sites and, in some jurisdictions, of war graves. Recommendation:
+    withhold or coarsen wreck positions by default, and gate full precision behind an authenticated
+    authority account.</p>
+    <p><strong>Suspected ordnance is a safety notice, not a map pin.</strong> A <code>mine_cylinder</code>
+    detection is unverified by definition. If published at all it must read as "suspected object — do
+    not approach — report to the maritime authority", and the primary route should be a notification to
+    that authority rather than a public layer.</p>
+    <p><strong>The map is advisory, not a navigational chart.</strong> It carries no hydrographic
+    authority and must say so plainly. It supplements official notices to mariners; it never replaces
+    them.</p>
+  </div>
+</section>
+
+<!-- ══════════ 07 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">07</span><h2>The web stack</h2></div>
+  <div class="prose">
+    <p class="lede">One repository, one <code>docker compose up</code>, five services. The model is a
+    library imported by the worker — there is no ML microservice, and no network hop per tile.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 4 — the deployed stack, and where the model lives inside it</div>
+    <svg viewBox="0 0 900 250" role="img" aria-label="The compose stack. A frontend nginx container serves the dashboard and proxies to the web service. The web service runs Django with Daphne for REST and WebSocket. Redis is the Celery broker and the Channels layer. The worker service is the same image as web with a different command; it imports the model package directly and loads the FP32 ONNX file. PostgreSQL stores jobs and detections. A shared media volume holds uploads. Scaling inference means adding worker replicas.">
+      <defs>
+        <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="12" y="70" width="120" height="56" rx="8" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="72" y="92" text-anchor="middle" class="t2">frontend</text>
+      <text x="72" y="107" text-anchor="middle" class="t3 m">nginx + Vite build</text>
+
+      <rect x="164" y="70" width="130" height="56" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="229" y="92" text-anchor="middle" class="t2">web</text>
+      <text x="229" y="107" text-anchor="middle" class="t3 m">Django · daphne :8000</text>
+
+      <rect x="326" y="70" width="110" height="56" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="381" y="92" text-anchor="middle" class="t2">redis</text>
+      <text x="381" y="107" text-anchor="middle" class="t3 m">broker + channels</text>
+
+      <rect x="468" y="52" width="228" height="92" rx="9" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="582" y="74" text-anchor="middle" class="t2">worker &nbsp;<tspan class="t3 m">× N replicas</tspan></text>
+      <text x="582" y="92" text-anchor="middle" class="t3 m">celery -A drishti_api worker</text>
+      <rect x="486" y="100" width="192" height="34" rx="5" fill="var(--surface)" stroke="var(--accent)" stroke-dasharray="3 3"/>
+      <text x="582" y="115" text-anchor="middle" class="t3">import ml.inference.pipeline</text>
+      <text x="582" y="128" text-anchor="middle" class="t3 m" fill="var(--accent-deep)">best_detector.onnx · no torch</text>
+
+      <rect x="728" y="70" width="120" height="56" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="788" y="92" text-anchor="middle" class="t2">postgres</text>
+      <text x="788" y="107" text-anchor="middle" class="t3 m">jobs + detections</text>
+
+      <g stroke="currentColor" stroke-width="1.4" fill="none">
+        <line x1="132" y1="98" x2="162" y2="98" marker-end="url(#a4)"/>
+        <line x1="294" y1="98" x2="324" y2="98" marker-end="url(#a4)"/>
+        <line x1="436" y1="98" x2="466" y2="98" marker-end="url(#a4)"/>
+        <line x1="696" y1="98" x2="726" y2="98" marker-end="url(#a4)"/>
+      </g>
+      <path d="M229 126 C 229 176 788 176 788 128" fill="none" stroke="currentColor" stroke-width="1.2"
+            stroke-dasharray="3 3" marker-end="url(#a4)"/>
+      <text x="500" y="172" text-anchor="middle" class="t3">web reads detections for the dashboard</text>
+
+      <rect x="164" y="196" width="532" height="38" rx="7" fill="var(--sunk)" stroke="var(--rule)"/>
+      <text x="430" y="213" text-anchor="middle" class="t3">shared <tspan class="m">media</tspan> volume — uploads written by web, read by worker</text>
+      <text x="430" y="227" text-anchor="middle" class="t3 m" fill="var(--accent-deep)">scale inference: docker compose up --scale worker=4</text>
+    </svg>
+    <figcaption>The <code>worker</code> image <em>is</em> the <code>web</code> image with a different
+    command. Both carry <code>onnxruntime + numpy + opencv-headless + scikit-learn</code> and no
+    PyTorch — which is what keeps each replica near 250 MB of RAM instead of the ~1.5 GB that importing
+    torch alone would cost.</figcaption>
+  </figure>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Runtime</th><th class="n">Installed size</th><th class="n">RAM to import</th><th>Accuracy</th></tr></thead>
+      <tbody>
+        <tr class="dim"><td>torch + ultralytics <span class="pill p-crit">not used</span></td><td class="n">~4.4 GB</td><td class="n">~1.5 GB</td><td>identical</td></tr>
+        <tr class="spot"><td>onnxruntime <span class="pill p-good">shipped</span></td><td class="n">~210 MB</td><td class="n">~50 MB</td><td>identical</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>The ONNX file is <em>not</em> a reduced model — same weights, same architecture, verified
+    detection-for-detection against PyTorch on all 850 test tiles. The choice is entirely about what
+    has to be installed to run it. <code>best_detector.pt</code> stays in the repository for retraining;
+    the serving path never touches it.</p>
+  </div>
+</section>
+
+<!-- ══════════ 08 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">08</span><h2>Deployment roadmap</h2></div>
+  <div class="prose">
+    <p class="lede">Four phases. Each one is independently demonstrable, and nothing in a later phase
+    invalidates an earlier one.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Phase</th><th>Scope</th><th>Stack</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="spot">
+          <td><strong>1 · Demo</strong><br><span class="t3">SIH</span></td>
+          <td>Upload → detect → map → review → export. Single operator, single machine.</td>
+          <td>One VM (4 vCPU / 8 GB). <code>docker compose up</code>. Caddy or nginx + Let's Encrypt. All five services on one box.</td>
+          <td><span class="pill p-acc">wiring now</span></td>
+        </tr>
+        <tr>
+          <td><strong>2 · Pilot</strong></td>
+          <td>Multi-user, persistent surveys, the public map goes live behind its gates.</td>
+          <td>Managed PostgreSQL; object storage for uploads; the public GeoJSON endpoint cached at a CDN; PWA on static hosting. Worker replicas scale independently.</td>
+          <td><span class="pill p-flat">planned</span></td>
+        </tr>
+        <tr>
+          <td><strong>3 · Field</strong></td>
+          <td>Model on the vehicle. Autonomous survey, bulk sync on recovery.</td>
+          <td>Jetson Orin NX 16 GB, FP16 TensorRT engine, torch-free stack in a pressure/thermal enclosure. Ship server runs the same compose stack for reprocessing.</td>
+          <td><span class="pill p-warn">needs benchmark</span></td>
+        </tr>
+        <tr>
+          <td><strong>4 · Loop</strong></td>
+          <td>Confirmed detections become training data; the model improves per operator.</td>
+          <td>Fine-tuning job from the review queue; per-survey model versions; A/B against the frozen baseline.</td>
+          <td><span class="pill p-flat">designed</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="prose">Phase 1 in concrete terms</h3>
+  <pre class="code"><span class="c"># one commodity VM is genuinely enough for the demo</span>
+git clone https://github.com/Rehan9599/Sonar-Drishti.git &amp;&amp; cd Sonar-Drishti
+cp .env.example .env          <span class="c"># set SECRET_KEY, DB password, ALLOWED_HOSTS</span>
+docker compose up --build -d
+docker compose exec web python manage.py migrate
+
+<span class="c"># dashboard :5173 · API :8000 · docs :8000/api/docs/</span>
+<span class="c"># scale inference when a survey is large:</span>
+docker compose up -d --scale worker=4</pre>
+
+  <div class="note good">
+    <h4>Why one box is not a compromise</h4>
+    <p>The model runs at ~90 ms/tile on CPU with a ~250 MB worker footprint. A 4-core VM running four
+    worker replicas processes roughly 40 tiles/second of wall-clock throughput — far beyond what a
+    demonstration, or a single survey upload, requires. Splitting the ML onto its own server would add
+    a deployment, a failure mode and a per-tile network hop while buying nothing we need.</p>
+  </div>
+</section>
+
+<!-- ══════════ 09 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">09</span><h2>Measured, assumed, and not yet known</h2></div>
+  <div class="prose">
+    <p class="lede">The single most useful table in this document. Everything below is stated at the
+    confidence we actually have.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Claim</th><th>Basis</th><th>Confidence</th></tr></thead>
+      <tbody>
+        <tr><td>mAP@50 0.641; per-class results</td><td>held-out 850-tile test set, standard protocol</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>~90 ms/tile, FP32 ONNX</td><td>benchmarked on the development CPU</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>ONNX ≡ PyTorch accuracy</td><td>verified across all 850 test tiles</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>INT8 collapses to 0.00</td><td>measured; excluded from deployment</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>Detection position ≈ ±120 m</td><td>disagreement between two navigation paths on the same target</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>Iver4 900 / EdgeTech 2205 specifications</td><td>manufacturer documentation</td><td><span class="pill p-good">published</span></td></tr>
+        <tr><td>850 / 1600 kHz sonar configuration</td><td>our proposal; the published Iver4 sheet lists 600/1600</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr><td>5 Hz cadence → 200 ms ceiling</td><td>sizing assumption, not a 2205 output-rate spec</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr><td>8–10 h survey scenario</td><td>planning figure, inside published endurance</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr><td>~80 bytes per acoustic contact record</td><td>design target from a packed record; no link budget yet</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr class="dim"><td>Jetson FP16 + TensorRT latency and power</td><td>—</td><td><span class="pill p-crit">not measured</span></td></tr>
+        <tr class="dim"><td>2205 output rate, waterfall format, GB/hour</td><td>—</td><td><span class="pill p-crit">not researched</span></td></tr>
+        <tr class="dim"><td>Payload electrical / thermal integration</td><td>—</td><td><span class="pill p-crit">not researched</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════ 10 ══════════ -->
+<section>
+  <div class="sechead"><span class="n">10</span><h2>Next actions</h2></div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>#</th><th>Action</th><th>Owner</th><th>Unblocks</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Execute the Turborepo restructure and fill the Django stubs</td><td>backend + frontend</td><td>Phase 1 demo</td></tr>
+        <tr><td class="n">2</td><td>Wire the dashboard's five screens against the locked API contract</td><td>frontend</td><td>Phase 1 demo</td></tr>
+        <tr><td class="n">3</td><td>Add <code>/api/public/debris/</code> with the three publication gates</td><td>backend</td><td>Mode C</td></tr>
+        <tr><td class="n">4</td><td>Build the mobile PWA: geolocation, offline cache, uncertainty circles</td><td>frontend</td><td>Mode C</td></tr>
+        <tr><td class="n">5</td><td>Benchmark FP16 + TensorRT on an Orin NX — latency <em>and</em> power</td><td>ML + hardware</td><td>Phase 3, and the deck's edge slide</td></tr>
+        <tr><td class="n">6</td><td>Research the 2205 output rate and waterfall format; derive GB/hour</td><td>research</td><td>storage budget, cadence validation</td></tr>
+        <tr><td class="n">7</td><td>Decide the heritage / ordnance publication policy</td><td>team + mentor</td><td>Mode C go-live</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <h4>The one-sentence version</h4>
+    <p>A calibrated four-class sonar detector that already meets its edge latency target on a CPU,
+    wrapped in a single-host web stack that any team member can run with one command, with a designed
+    path onto an AUV and a public map that puts confirmed hazards in the hands of the people who work
+    those waters.</p>
+  </div>
+</section>
+
+<footer>
+  DRISHTI · system &amp; deployment dossier · SIH 2026 · Problem Statement 26057<br>
+  integrates: MODEL_DOSSIER · AUV &amp; Edge Computing Reference Report · DEPLOYMENT_RATIONALE ·
+  TURBOREPO_SETUP · API_ENDPOINTS<br>
+  code <a href="https://github.com/Rehan9599/Sonar-Drishti">github.com/Rehan9599/Sonar-Drishti</a> ·
+  weights <a href="https://huggingface.co/rehan9599/drishti-detector">huggingface.co/rehan9599/drishti-detector</a>
+</footer>
+
+</div>
+
+</body>
+</html>

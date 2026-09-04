@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRISHTI · Module 3 Run</title>
+<meta name="description" content="Geotagging & reporting engine: what was built, the results of the AURORA validation run (XTF vs nav-CSV agree to sub-metre on position), and how it wires into the rest of the pipeline.">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f3f6f7;--surface:#fcfdfd;--surface-2:#eaeef0;
+    --ink:#0f1519;--ink-2:#48535a;--muted:#7b868c;
+    --rule:#dbe2e5;--rule-strong:#c3ccd0;
+    --accent:#0e7c8b;--accent-soft:#e2f0f2;
+    --good:#0a7d1f;--good-soft:#e3f2e6;
+    --warn:#9a6400;--warn-soft:#f6ecda;
+    --crit:#c22f2f;--crit-soft:#f7e3e3;
+    --shadow:0 1px 2px rgba(15,25,30,.06),0 8px 24px -12px rgba(15,25,30,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+      --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+      --rule:#252f36;--rule-strong:#33404a;
+      --accent:#3fb6c6;--accent-soft:#123037;
+      --good:#3fbf57;--good-soft:#12331a;
+      --warn:#e0a01e;--warn-soft:#33290f;
+      --crit:#e35b5b;--crit-soft:#361a1a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+    --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+    --rule:#252f36;--rule-strong:#33404a;
+    --accent:#3fb6c6;--accent-soft:#123037;
+    --good:#3fbf57;--good-soft:#12331a;
+    --warn:#e0a01e;--warn-soft:#33290f;
+    --crit:#e35b5b;--crit-soft:#361a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  header.mast{max-width:1000px;margin:0 auto;padding:52px 24px 24px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;display:flex;align-items:center;gap:12px}
+  .kicker::after{content:"";height:1px;flex:1;background:var(--rule)}
+  h1{font-size:clamp(1.9rem,5vw,2.9rem);line-height:1.06;letter-spacing:-.02em;font-weight:600;margin:0 0 16px;text-wrap:balance}
+  .standfirst{font-size:1.15rem;color:var(--ink-2);margin:0 0 24px;max-width:60ch;text-wrap:pretty}
+  .specbar{display:flex;flex-wrap:wrap;gap:8px 10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+  .specbar span{background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;padding:4px 9px;color:var(--ink-2)}
+  .specbar b{color:var(--ink);font-weight:600}
+  section{max-width:1000px;margin:0 auto;padding:30px 24px 0}
+  .col{max-width:768px}
+  h2{font-size:1rem;font-weight:600;letter-spacing:.02em;margin:46px 0 4px;padding-top:22px;border-top:1px solid var(--rule-strong);display:flex;align-items:baseline;gap:12px}
+  h2 .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+  h3{font-size:1.02rem;font-weight:600;margin:26px 0 4px}
+  p{margin:11px 0;max-width:72ch}
+  strong{font-weight:600}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+  .tldr{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:22px 24px;margin:24px 0 8px;box-shadow:var(--shadow)}
+  .tldr h2{border:0;margin:0 0 10px;padding:0}
+  .tldr p{margin:10px 0}.tldr p:first-of-type{margin-top:0}
+
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:22px 0}
+  .readout div{background:var(--surface);padding:14px 16px}
+  .readout .v{font-family:"IBM Plex Mono",monospace;font-size:1.4rem;font-weight:500;letter-spacing:-.01em}
+  .readout .l{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .readout .v.ok{color:var(--good)}
+
+  .tbl-scroll{overflow-x:auto;margin:18px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+  tbody td:first-child{font-weight:500}
+  td.mono,th.mono{font-family:"IBM Plex Mono",monospace}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+  .pill.good{color:var(--good);background:var(--good-soft)}
+  .pill.warn{color:var(--warn);background:var(--warn-soft)}
+  .pill.flat{color:var(--ink-2);background:var(--surface-2)}
+
+  figure{margin:24px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 20px 14px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:13px;color:var(--muted);margin-top:12px;max-width:70ch}
+  .fig-title{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+  svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .lbl{fill:var(--ink);font-size:12px}
+  .sub{fill:var(--muted);font-size:10.5px}
+  .edge{fill:var(--ink-2);font-size:10.5px}
+
+  pre.code{margin:16px 0;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.65;color:var(--ink-2);box-shadow:var(--shadow)}
+  pre.code .k{color:var(--accent)}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:20px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:2px 0 20px 46px;border-left:1px solid var(--rule);margin-left:14px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:-15px;top:-4px;width:29px;height:29px;border-radius:50%;background:var(--surface);border:1px solid var(--rule-strong);color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  ol.steps>li:last-child{border-left-color:transparent}
+  ol.steps>li h4{margin:0 0 3px;font-size:1rem;font-weight:600}
+  ol.steps>li p{margin:4px 0;font-size:14.5px;color:var(--ink-2)}
+
+  ul.tick{list-style:none;padding:0;margin:14px 0}
+  ul.tick li{padding:6px 0 6px 26px;position:relative;border-bottom:1px solid var(--rule);font-size:14.5px}
+  ul.tick li:last-child{border-bottom:0}
+  ul.tick li::before{content:"";position:absolute;left:4px;top:13px;width:8px;height:8px;border:1.5px solid var(--accent);border-radius:2px}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:16px 20px;margin:20px 0;box-shadow:var(--shadow)}
+  .note h3{margin:0 0 6px}
+  .flow{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0;font-size:13px}
+  .flow .node{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:12px 13px;position:relative}
+  .flow .node .t{font-weight:600;margin-bottom:3px}
+  .flow .node .s{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+  .flow .node.done{border-color:color-mix(in srgb,var(--good) 45%,var(--rule))}
+  .flow .node.now{border-color:color-mix(in srgb,var(--accent) 55%,var(--rule));box-shadow:0 0 0 3px var(--accent-soft)}
+  .flow .node .tag{position:absolute;top:-9px;left:12px;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;padding:1px 6px;border-radius:4px;font-weight:700}
+  .flow .node.done .tag{background:var(--good-soft);color:var(--good)}
+  .flow .node.now .tag{background:var(--accent-soft);color:var(--accent)}
+  .flow .node.next .tag{background:var(--surface-2);color:var(--muted)}
+  footer{max-width:1000px;margin:42px auto 0;padding:20px 24px;border-top:1px solid var(--rule-strong);color:var(--muted);font-size:12px;font-family:"IBM Plex Mono",monospace}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+</head>
+<body>
+<header class="mast">
+  <p class="kicker">DRISHTI &nbsp;/&nbsp; SIH 2026 &nbsp;/&nbsp; PS 26057 &nbsp;/&nbsp; Module 3</p>
+  <h1>Geotagging &amp; reporting &mdash; first run</h1>
+  <p class="standfirst">The engine that turns a detection box in a sonar image into a latitude, a longitude,
+  a size in metres, and a structured JSON/CSV report. Built and validated against the AURORA survey &mdash;
+  position agrees with the recorded navigation to under a metre.</p>
+  <div class="specbar mono">
+    <span><b>Fixture</b> AURORA JC125/M87 SSS</span>
+    <span><b>Nav rows</b> 92,450 · 12.8 h</span>
+    <span><b>XTF parse</b> 8,000 pings / 0.10 s</span>
+    <span><b>Unit tests</b> 6 / 6</span>
+    <span><b>Date</b> 2026-08-31</span>
+  </div>
+</header>
+
+<section>
+  <div class="tldr col">
+    <h2>The short version</h2>
+    <p><strong>It works.</strong> Two independent navigation paths &mdash; a minimal XTF ping-header parser and
+    the survey's coordinate CSVs &mdash; both produce geotagged JSON, CSV and GeoJSON reports, each record
+    carrying an audit pointer back to its source ping.</p>
+    <p><strong>Position is validated.</strong> The XTF-parsed lat/lon/heading match the recorded
+    <code>navigation.csv</code> to <strong>under 1&nbsp;m</strong> at the same timestamp. Six unit tests pin
+    the projection geometry.</p>
+    <p><strong>One number to calibrate:</strong> the across-track scale. With the real slant range from the
+    XTF (107.7&nbsp;m) the two paths still differ by ~120&nbsp;m because the CSV-only path was run with a 50&nbsp;m
+    default. Fix: always read the range scale from the XTF or the image's georef tags.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">01</span> What Module 3 has to do</h2>
+  <p class="col"><strong>Problem statement:</strong> <em>"reads sonar metadata (such as coordinate files or
+  ping headers) to output a structured report (JSON or CSV) &hellip; the exact location (latitude/longitude),
+  bounding dimensions, and classification of each detected hazard."</em></p>
+  <p class="col"><strong>Our approach:</strong> parse the navigation once into two lookup tables, then project
+  every detection through the sonar geometry.</p>
+  <figure>
+    <div class="fig-title">Pixel &rarr; latitude / longitude</div>
+    <svg viewBox="0 0 900 340" role="img" aria-label="Plan view. The vehicle track runs upward; the tow-fish sits at a ping position with a heading arrow. A detection's image row selects which ping, which gives the tow-fish latitude, longitude and heading. The detection's image column gives a slant range across the swath; ground range equals the square root of slant range squared minus altitude squared. The target sits that ground range away from the track, perpendicular to the heading — to the left for the port channel, right for starboard. The final point is a geodesic step from the fish position along that bearing.">
+      <!-- track -->
+      <line x1="250" y1="300" x2="250" y2="40" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <text x="256" y="52" class="sub">vehicle / tow-fish track</text>
+      <!-- fish -->
+      <circle cx="250" cy="180" r="6" fill="var(--accent)"/>
+      <text x="235" y="176" text-anchor="end" class="lbl">tow-fish</text>
+      <text x="235" y="191" text-anchor="end" class="sub m">(lat, lon) from ping N</text>
+      <!-- heading arrow -->
+      <line x1="250" y1="180" x2="250" y2="130" stroke="var(--accent)" stroke-width="2" marker-end="url(#a3)"/>
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+        <marker id="a3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <text x="258" y="128" class="sub" fill="var(--accent)">heading</text>
+      <!-- across-track to target -->
+      <line x1="250" y1="180" x2="470" y2="180" stroke="currentColor" stroke-width="1.5" marker-end="url(#a3b)"/>
+      <text x="360" y="172" text-anchor="middle" class="edge">ground range (perpendicular to heading)</text>
+      <rect x="466" y="172" width="16" height="16" fill="var(--ink)"/>
+      <text x="490" y="184" class="lbl">target hazard</text>
+      <text x="490" y="199" class="sub m">geodesic step -> (lat, lon)</text>
+      <text x="360" y="200" text-anchor="middle" class="sub">port = left of track&nbsp;&nbsp;·&nbsp;&nbsp;starboard = right</text>
+
+      <!-- inset: range view -->
+      <rect x="560" y="230" width="320" height="96" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/>
+      <text x="574" y="250" class="sub" font-weight="600" letter-spacing=".06em">ACROSS-TRACK (range view)</text>
+      <line x1="574" y1="300" x2="720" y2="300" stroke="var(--ink-2)" stroke-width="1.5"/>
+      <text x="574" y="314" class="sub">seabed</text>
+      <circle cx="590" cy="266" r="4" fill="var(--accent)"/>
+      <line x1="590" y1="266" x2="590" y2="300" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 2"/>
+      <text x="596" y="284" class="sub">H</text>
+      <line x1="590" y1="266" x2="700" y2="298" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="636" y="272" class="sub" fill="var(--accent)">slant R (from column)</text>
+      <line x1="590" y1="300" x2="700" y2="300" stroke="var(--ink)" stroke-width="2.5"/>
+      <text x="645" y="296" class="sub">ground = &radic;(R&sup2; &minus; H&sup2;)</text>
+
+      <!-- left: image -->
+      <rect x="40" y="60" width="120" height="240" rx="4" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+      <text x="100" y="52" text-anchor="middle" class="sub">sonar image</text>
+      <line x1="100" y1="60" x2="100" y2="300" stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="2 3"/>
+      <text x="100" y="315" text-anchor="middle" class="sub">nadir col</text>
+      <rect x="120" y="150" width="16" height="16" fill="var(--ink)"/>
+      <path d="M136 158 H 240" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#a3b)"/>
+      <text x="60" y="150" class="sub">row</text>
+      <text x="60" y="163" class="sub">&darr; ping N</text>
+      <text x="150" y="145" class="sub">col &rarr; slant R</text>
+    </svg>
+    <figcaption><strong>row</strong> selects the ping &rarr; the tow-fish's own lat/lon/heading.
+    <strong>column</strong> gives the slant range across the swath &rarr; ground range corrects for altitude
+    &rarr; the target is that far from the track, perpendicular to the heading. Box width/height convert to
+    metres with the same scale.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">02</span> What was built</h2>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>File</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">geotagging/metadata_parser.py</td><td><code>NavigationTable</code> (time &rarr; interpolated lat/lon/heading/altitude, circular heading blend) + <code>PingIndex</code> ((file, ping) &rarr; fix). Parses AURORA <code>navigation.csv</code> and <code>side-scan-sonar-index.csv</code>.</td></tr>
+        <tr><td class="mono">geotagging/xtf_reader.py</td><td>Minimal header-only XTF parser &mdash; no third-party library. Per ping: number, UTC time, lat/lon, heading, slant range. Skips the sample bytes, so a 400&nbsp;MB log is walked in ~1&nbsp;s.</td></tr>
+        <tr><td class="mono">geotagging/coordinate_projection.py</td><td>The geometry above: <code>slant_to_ground</code>, <code>column_to_across_track</code>, <code>project_detection</code> &rarr; lat/lon + size in metres + port/starboard.</td></tr>
+        <tr><td class="mono">reporting/schema.py</td><td><code>DetectionRecord</code> matching <code>docs/api_contract.md</code>. <code>ping_id = "file#ping"</code> is the audit pointer. Review bands: &ge;80 auto-confirm, &ge;30 pending review, &lt;30 dropped.</td></tr>
+        <tr><td class="mono">reporting/json_export.py</td><td>Report envelope + a <strong>GeoJSON FeatureCollection</strong> the Leaflet map consumes directly.</td></tr>
+        <tr><td class="mono">reporting/csv_export.py</td><td>Flat one-row-per-hazard CSV for QGIS / Excel / Google Earth.</td></tr>
+        <tr><td class="mono">geotagging/run_geotag.py</td><td>CLI driver. <code>--xtf</code> / <code>--ping-index</code>+<code>--nav</code> / <code>--nav</code>. <code>--selftest</code> runs both paths on AURORA.</td></tr>
+        <tr><td class="mono">tests/test_geotagging.py</td><td>6 unit tests on the projection math.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">03</span> Results of the run</h2>
+
+  <div class="readout col">
+    <div><div class="v ok mono">6 / 6</div><div class="l">unit tests pass</div></div>
+    <div><div class="v ok mono">&lt; 1 m</div><div class="l">XTF vs nav-CSV position</div></div>
+    <div><div class="v mono">0.10 s</div><div class="l">8,000 ping headers</div></div>
+    <div><div class="v mono">3 / 4</div><div class="l">detections kept (1 dropped &lt;30%)</div></div>
+  </div>
+
+  <h3 class="col">XTF parser validated against the recorded navigation</h3>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>field</th><th class="num">from XTF ping header</th><th class="num">from navigation.csv (same time)</th><th class="num">&Delta;</th></tr></thead>
+      <tbody>
+        <tr><td>latitude</td><td class="num">50.390283</td><td class="num">50.390286</td><td class="num">~0.3 m</td></tr>
+        <tr><td>longitude</td><td class="num">-7.712145</td><td class="num">-7.712145</td><td class="num">&lt;0.1 m</td></tr>
+        <tr><td>heading</td><td class="num">168.3&deg;</td><td class="num">168.3&deg;</td><td class="num">0.0&deg;</td></tr>
+        <tr><td>slant range</td><td class="num">107.7 m</td><td class="num">&mdash; (not in CSV)</td><td class="num">&mdash;</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col mono" style="font-size:12.5px;color:var(--muted)">XTF nav-field offsets for the AURORA / SONARWIZ
+  export sit 4 bytes earlier than the base Triton layout &mdash; found by scanning the ping header for the
+  expected coordinate range and pinned in <code>xtf_reader.py</code>.</p>
+
+  <h3 class="col">Geotagged output (XTF path, fake detections on <code>DATA0000106</code>)</h3>
+  <pre class="code">  shipwreck           <span class="k">91.0%</span>  (50.391694, -7.712916)  starboard 56.3 m  ping DATA0000106.H-PU<span class="k">#2969</span>  [auto_confirmed]
+  submarine_pipeline  <span class="k">78.0%</span>  (50.387089, -7.711097)  port      73.9 m  ping DATA0000106.H-PU<span class="k">#6370</span>  [pending_review]
+  mine_cylinder       <span class="k">65.0%</span>  (50.384269, -7.712157)  starboard  0.0 m  ping DATA0000106.H-PU<span class="k">#8322</span>  [pending_review]
+  shipwreck           <span class="k">22.0%</span>  &mdash; dropped (below the 30% review floor)</pre>
+
+  <h3 class="col">Report record (JSON), one per hazard</h3>
+  <pre class="code">{
+  <span class="k">"detection_id"</span>: "2ea572a0-88ad-46fd-a358-202070028a8d",
+  <span class="k">"job_id"</span>:       "bd31f0ba-d251-4c5a-ac48-28de72cb3900",
+  <span class="k">"ping_id"</span>:      "DATA0000106.H-PU#2969",      <span class="k">// audit pointer back to the ping</span>
+  <span class="k">"timestamp"</span>:    "2015-08-12T09:12:49.970000+00:00",
+  <span class="k">"latitude"</span>:     50.3917767,
+  <span class="k">"longitude"</span>:    -7.7118235,
+  <span class="k">"class_label"</span>:  "shipwreck",
+  <span class="k">"confidence_score"</span>: 91.0,
+  <span class="k">"bounding_geometry"</span>: { "bbox": [1500,4200,1620,4360], "width_m": 5.6, "height_m": 7.47 },
+  <span class="k">"across_track_m"</span>: 21.69,  <span class="k">"side"</span>: "starboard",
+  <span class="k">"review_status"</span>: "auto_confirmed",
+  <span class="k">"source_file"</span>:  "DATA0000106.H-PU"
+}</pre>
+  <p class="col">Also written: the full job envelope (<code>report.json</code>), a Leaflet-ready
+  <code>report.geojson</code>, and a flat <code>report.csv</code>.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">04</span> What's solid, what's approximate</h2>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Part</th><th>Status</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Navigation parsing &amp; time interpolation</td><td><span class="pill good">solid</span></td><td>92k rows, circular heading blend, clamped to the recorded span.</td></tr>
+        <tr><td>XTF lat / lon / heading</td><td><span class="pill good">solid</span></td><td>Cross-validated &lt;1 m against the independent CSV.</td></tr>
+        <tr><td>Projection geometry &amp; report schema</td><td><span class="pill good">solid</span></td><td>6 unit tests; output matches the locked API contract.</td></tr>
+        <tr><td>Across-track scale</td><td><span class="pill warn">calibrate</span></td><td>Use the XTF slant range (or the image's georef tags). A wrong default shifts targets ~tens of metres.</td></tr>
+        <tr><td>row &rarr; ping mapping</td><td><span class="pill warn">approximate</span></td><td>Currently linear across the ping span. Refine against a real TIF's row&harr;ping relationship.</td></tr>
+        <tr><td>XTF altitude field</td><td><span class="pill flat">worked around</span></td><td>This export's offset doesn't validate; altitude is joined from the nav CSV by timestamp (a small correction at 108 m slant).</td></tr>
+        <tr><td>End-to-end detection accuracy on AURORA</td><td><span class="pill flat">n/a</span></td><td>AURORA has real navigation but no target labels &mdash; it validates <em>position</em>, not <em>detection</em>. The demo runs the real detector on the AURORA images; coordinates are real even though we can't score hits on that set.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">05</span> Moving forward with these results</h2>
+  <ol class="steps col">
+    <li>
+      <h4>Wire into the backend job</h4>
+      <p>In <code>backend/detections/tasks.py</code>: detector &rarr; <code>confidence_filter</code> &rarr;
+      <code>geotag()</code> &rarr; save <code>DetectionRecord</code>s to PostgreSQL &rarr; push over the
+      WebSocket. The report exporters are already the JSON/CSV the API contract promises.</p>
+    </li>
+    <li>
+      <h4>Unblock Module 2's shadow check</h4>
+      <p>The XTF parser now yields per-ping <strong>altitude and slant range</strong> &mdash; exactly what
+      <code>ShadowVerifier.compute_penalty</code> was waiting on. Feed those into the confidence pipeline and
+      measure the false-positive reduction on real geometry.</p>
+    </li>
+    <li>
+      <h4>Feed Module 4's map</h4>
+      <p><code>report.geojson</code> is a plain FeatureCollection of points with class, confidence and
+      review status &mdash; drop it straight into the Leaflet layer. Clicking a pin shows the
+      <code>ping_id</code> and timestamp for the auditability requirement.</p>
+    </li>
+    <li>
+      <h4>Close the two approximations</h4>
+      <p>Pull the swath range scale from the XTF (done for that path) or the TIF georef tags (for the
+      CSV-only path). Check the row&harr;ping relationship on one real TIF and replace the linear assumption
+      if it's off.</p>
+    </li>
+  </ol>
+  <div class="note col">
+    <h3>Priority unchanged</h3>
+    <p style="margin:6px 0">Module 3 core is done. Next: wire-up + Module 2 shadow check on real geometry,
+    then Module 4 swaps mock &rarr; live. The detector retrain still goes last &mdash; it changes none of
+    this.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">06</span> Pipeline status</h2>
+  <div class="flow">
+    <div class="node next"><span class="tag">built · not wired</span><div class="t">Preprocess</div><div class="s">Lee · CLAHE</div></div>
+    <div class="node done"><span class="tag">M1 · locked</span><div class="t">Detect</div><div class="s">YOLOv8s · nc=4</div></div>
+    <div class="node now"><span class="tag">M2 · half-built</span><div class="t">Confidence</div><div class="s">calibrate · per-class</div></div>
+    <div class="node done"><span class="tag">M3 · core done</span><div class="t">Geotag &amp; report</div><div class="s">JSON · CSV · GeoJSON</div></div>
+    <div class="node now"><span class="tag">M4 · parallel</span><div class="t">Dashboard</div><div class="s">map · download</div></div>
+  </div>
+  <p class="col">Module 3's core is done and validated. It unblocks Module 2's shadow check and gives Module 4
+  a real GeoJSON to render. Remaining Module 3 work is wiring and two calibration tweaks &mdash; not new
+  architecture.</p>
+</section>
+
+<footer>
+  DRISHTI &middot; Module 3 run &middot; fixture: AURORA JC125/M87 side-scan-sonar &middot;
+  companions: run1_detector_report · run2_detector_report · training_glossary · status_and_plan &middot; 2026-08-31
+</footer>
+</body>
+</html>

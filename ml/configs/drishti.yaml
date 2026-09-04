@@ -1,0 +1,14 @@
+path: D:/Sonar-Drishti/ml/data/splits
+train: train/images
+val: val/images
+test: test/images
+
+task: detect
+
+nc: 5
+names:
+  0: crab_pot
+  1: submarine_pipeline
+  2: shipwreck
+  3: ghost_net
+  4: mine_cylinder

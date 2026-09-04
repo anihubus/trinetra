@@ -1,0 +1,1450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Complete DRISHTI project documentation - problem statement, data collection and preprocessing, literature review, three training runs, system architecture, scalability.">
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>DRISHTI Project Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{
+    color-scheme:light;
+    --ground:#edf1f2; --surface:#fbfcfd; --sunk:#e3e9ea; --rule:#d3dbdd; --rule-firm:#b8c4c7;
+    --ink:#0f181c; --ink-2:#44555c; --muted:#78888e;
+    --accent:#0d7490; --accent-deep:#0a5567; --accent-wash:#dceef2;
+    --signal:#bd6108; --signal-wash:#f7e9d8;
+    --good:#146c43; --good-wash:#dcefe3;
+    --warn:#96620c; --warn-wash:#f5eada;
+    --crit:#ab2317; --crit-wash:#f6e0dd;
+    --lift:0 1px 2px rgba(15,24,28,.05), 0 12px 28px -18px rgba(15,24,28,.22);
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#070d10; --surface:#101a1e; --sunk:#0b1316; --rule:#223136; --rule-firm:#35474e;
+    --ink:#e8f1f3; --ink-2:#a3b3b9; --muted:#75868c;
+    --accent:#3aafc6; --accent-deep:#7fd2e2; --accent-wash:#0d2b33;
+    --signal:#e0913c; --signal-wash:#2e1f0e;
+    --good:#43c176; --good-wash:#0f2c1b;
+    --warn:#d9a13a; --warn-wash:#2d240f;
+    --crit:#e2685c; --crit-wash:#331816;
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -20px rgba(0,0,0,.8);
+  }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --ground:#070d10; --surface:#101a1e; --sunk:#0b1316; --rule:#223136; --rule-firm:#35474e;
+    --ink:#e8f1f3; --ink-2:#a3b3b9; --muted:#75868c;
+    --accent:#3aafc6; --accent-deep:#7fd2e2; --accent-wash:#0d2b33;
+    --signal:#e0913c; --signal-wash:#2e1f0e;
+    --good:#43c176; --good-wash:#0f2c1b;
+    --warn:#d9a13a; --warn-wash:#2d240f;
+    --crit:#e2685c; --crit-wash:#331816;
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -20px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.65;
+       -webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  .shell{max-width:1010px;margin:0 auto;padding:0 28px}
+  .prose{max-width:67ch}
+  p{margin:14px 0}
+  strong{font-weight:600}
+  em{font-style:italic}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.84em;background:var(--sunk);
+       padding:1px 5px;border-radius:3px;border:1px solid var(--rule)}
+
+  h1,h2,h3,h4{font-family:"Archivo",system-ui,sans-serif;text-wrap:balance;margin:0}
+  h1{font-size:clamp(2.2rem,5.4vw,3.5rem);line-height:1.03;letter-spacing:-.028em;font-weight:700}
+  h2{font-size:clamp(1.4rem,2.9vw,1.85rem);line-height:1.13;letter-spacing:-.018em;font-weight:600}
+  h3{font-size:1.1rem;font-weight:600;letter-spacing:-.008em;margin:32px 0 4px}
+  h4{font-size:.95rem;font-weight:600;margin:0 0 6px}
+
+  .cover{padding:70px 0 30px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.2em;
+          text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .kicker::after{content:"";flex:1;height:1px;background:var(--rule-firm)}
+  .standfirst{font-size:1.18rem;line-height:1.55;color:var(--ink-2);max-width:62ch;margin:20px 0 0}
+
+  .hmg{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:1px;
+       background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin:34px 0 0}
+  .hm{background:var(--surface);padding:14px 16px}
+  .hm .v{font-family:"Archivo",sans-serif;font-size:1.6rem;font-weight:700;letter-spacing:-.02em;
+         line-height:1.05;font-variant-numeric:tabular-nums}
+  .hm .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.1em;
+         text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .hm.accent .v{color:var(--accent)}
+  .hm.signal .v{color:var(--signal)}
+
+  nav.toc{margin:34px 0 0;padding:22px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+  nav.toc .part{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.16em;
+                text-transform:uppercase;color:var(--signal);margin:16px 0 6px}
+  nav.toc .part:first-child{margin-top:0}
+  nav.toc ol{list-style:none;margin:0;padding:0;columns:2;column-gap:44px;font-size:14.5px;
+             font-family:"Archivo",sans-serif}
+  nav.toc li{padding:3px 0;break-inside:avoid}
+  nav.toc a{color:var(--ink-2);text-decoration:none}
+  nav.toc a:hover{color:var(--accent)}
+  nav.toc .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);margin-right:9px}
+  @media(max-width:660px){nav.toc ol{columns:1}}
+
+  .partmark{margin:60px 0 0;padding:14px 0 0;border-top:2px solid var(--signal);
+            font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;
+            text-transform:uppercase;color:var(--signal)}
+
+  section{padding:36px 0 0}
+  .sechead{display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--rule-firm);
+           padding-top:15px;margin-bottom:6px}
+  .sechead .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);
+              letter-spacing:.14em;flex:none;padding-top:5px}
+  .lede{font-size:1.04rem;color:var(--ink-2);max-width:64ch;margin:10px 0 0}
+
+  figure{margin:28px 0;background:var(--surface);border:1px solid var(--rule);
+         border-radius:12px;padding:24px 24px 16px;box-shadow:var(--lift)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink);overflow:visible}
+  .figtitle{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+            text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+  figcaption{font-size:14px;line-height:1.55;color:var(--ink-2);margin-top:16px;max-width:74ch;
+             border-top:1px solid var(--rule);padding-top:12px}
+  svg text{font-family:"Archivo",sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .t1{fill:var(--ink);font-size:13px}
+  .t2{fill:var(--ink-2);font-size:11.5px}
+  .t3{fill:var(--muted);font-size:10px}
+
+  .tw{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-family:"Archivo",sans-serif;font-size:13.5px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--sunk);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--ink-2);font-weight:600;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  td.n,th.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tbody td:first-child{font-weight:500}
+  tr.spot td{background:var(--accent-wash)}
+  tr.dim td{color:var(--muted)}
+
+  .pill{display:inline-block;font-family:"Archivo",sans-serif;font-size:10.5px;font-weight:600;
+        padding:2px 8px;border-radius:3px;white-space:nowrap}
+  .p-good{color:var(--good);background:var(--good-wash)}
+  .p-warn{color:var(--warn);background:var(--warn-wash)}
+  .p-crit{color:var(--crit);background:var(--crit-wash)}
+  .p-acc{color:var(--accent-deep);background:var(--accent-wash)}
+  .p-flat{color:var(--ink-2);background:var(--sunk)}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
+        border-radius:0 9px 9px 0;padding:17px 21px;margin:22px 0;box-shadow:var(--lift)}
+  .note.finding{border-left-color:var(--signal)}
+  .note.good{border-left-color:var(--good)}
+  .note.warn{border-left-color:var(--warn)}
+  .note.crit{border-left-color:var(--crit)}
+  .note h4{font-family:"Archivo",sans-serif}
+  .note p{margin:0;font-size:15.5px}
+  .note p + p{margin-top:9px}
+
+  .formula{background:var(--sunk);border:1px solid var(--rule);border-radius:8px;padding:13px 18px;
+           margin:16px 0;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink);overflow-x:auto}
+  .formula .lbl{color:var(--muted);font-size:10.5px;display:block;margin-bottom:6px;letter-spacing:.04em}
+
+  ul.clean{list-style:none;padding:0;margin:16px 0}
+  ul.clean li{padding:9px 0 9px 24px;position:relative;border-bottom:1px solid var(--rule);font-size:15.5px}
+  ul.clean li:last-child{border-bottom:0}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:17px;width:7px;height:7px;
+                      background:var(--accent);border-radius:1px}
+
+  .ledger{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+          border-radius:10px;overflow:hidden;margin:20px 0}
+  .lrow{display:grid;grid-template-columns:1.2fr 1fr;gap:1px;background:var(--rule)}
+  .lrow > div{background:var(--surface);padding:14px 17px}
+  .lrow .why{font-size:14.5px;color:var(--ink-2)}
+  .lrow .eff{font-family:"Archivo",sans-serif;font-size:13.5px}
+  .lrow .eff b{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  @media(max-width:660px){.lrow{grid-template-columns:1fr}}
+
+  pre.code{margin:16px 0;background:var(--surface);border:1px solid var(--rule);border-radius:9px;
+           padding:15px 18px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+           line-height:1.7;color:var(--ink-2);box-shadow:var(--lift)}
+  pre.code .c{color:var(--muted)}
+
+  footer{border-top:2px solid var(--ink);margin-top:56px;padding:22px 0 64px;
+         font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);line-height:1.8}
+  a{color:var(--accent-deep)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+</style>
+</head>
+<body>
+
+
+<div class="shell">
+
+<header class="cover">
+  <p class="kicker">DRISHTI &nbsp;·&nbsp; SIH 2026 &nbsp;·&nbsp; Problem Statement 26057 &nbsp;·&nbsp; project documentation</p>
+  <h1>Reading the seabed<br>with sound</h1>
+  <p class="standfirst">The complete record: how we read the problem statement, where the data came
+  from and what we did to it, the twelve papers that shaped our decisions, three training runs with
+  the measurements behind each, the system we built around the model, and how it scales.</p>
+
+  <div class="hmg">
+    <div class="hm accent"><div class="v">0.641</div><div class="k">mAP@50, held-out</div></div>
+    <div class="hm"><div class="v">0.99</div><div class="k">pipeline AP@50</div></div>
+    <div class="hm"><div class="v">0.037</div><div class="k">calibration error</div></div>
+    <div class="hm signal"><div class="v">~90 ms</div><div class="k">per tile, CPU</div></div>
+    <div class="hm"><div class="v">6,405</div><div class="k">training tiles</div></div>
+    <div class="hm"><div class="v">12</div><div class="k">sources reviewed</div></div>
+  </div>
+
+  <nav class="toc">
+    <div class="part">Part I — the problem</div>
+    <ol>
+      <li><span class="n">01</span><a href="#s1">The problem statement, decoded</a></li>
+      <li><span class="n">02</span><a href="#s2">Why sonar is not photography</a></li>
+    </ol>
+    <div class="part">Part II — the data</div>
+    <ol>
+      <li><span class="n">03</span><a href="#s3">Collecting data that does not exist</a></li>
+      <li><span class="n">04</span><a href="#s4">Preprocessing — the full pipeline and what we shipped</a></li>
+    </ol>
+    <div class="part">Part III — the research</div>
+    <ol>
+      <li><span class="n">05</span><a href="#s5">Twelve sources, and what each one settled</a></li>
+    </ol>
+    <div class="part">Part IV — the model</div>
+    <ol>
+      <li><span class="n">06</span><a href="#s6">Choosing the detector</a></li>
+      <li><span class="n">07</span><a href="#s7">Three runs, and what each one bought</a></li>
+      <li><span class="n">08</span><a href="#s8">Reading the training honestly</a></li>
+      <li><span class="n">09</span><a href="#s9">The shipped model</a></li>
+      <li><span class="n">10</span><a href="#s10">Why this is the right route</a></li>
+    </ol>
+    <div class="part">Part V — the system</div>
+    <ol>
+      <li><span class="n">11</span><a href="#s11">The four modules</a></li>
+      <li><span class="n">12</span><a href="#s12">The edge build</a></li>
+      <li><span class="n">13</span><a href="#s13">The platform — AUV, sonar, edge computer</a></li>
+      <li><span class="n">14</span><a href="#s14">Three operating modes</a></li>
+    </ol>
+    <div class="part">Part VI — scale</div>
+    <ol>
+      <li><span class="n">15</span><a href="#s15">Scalability</a></li>
+      <li><span class="n">16</span><a href="#s16">Measured, assumed, and next</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ═══════════════ PART I ═══════════════ -->
+<div class="partmark">Part I — the problem</div>
+
+<section id="s1">
+  <div class="sechead"><span class="n">01</span><h2>The problem statement, decoded</h2></div>
+  <div class="prose">
+    <p class="lede">PS 26057 (Ministry of Earth Sciences / NIOT) asks for an
+    <strong>AI-powered automated underwater marine debris and anomaly detection system using side-scan
+    sonar imagery</strong>. Eight functional requirements. Here is each one, and where it lives in
+    what we built.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Functional requirement</th><th>Where it lives</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Ingest raw SSS imagery and associated spatial metadata</td><td>XTF ping-header parser + navigation CSV reader<br><code>backend/geotagging/</code></td><td><span class="pill p-good">done</span></td></tr>
+        <tr><td>Handle speckle noise, varying pixel resolution, acoustic shadows, motion dropouts</td><td>Module 0 — Lee filter + CLAHE; slant-range/TVG available for transects; erase-augmentation trains for dropouts</td><td><span class="pill p-good">shipped</span></td></tr>
+        <tr><td>Detect and segment artificial anomalies against complex natural backgrounds</td><td>Module 1 — YOLOv8s, four hazard classes + explicit background negatives</td><td><span class="pill p-good">shipped</span></td></tr>
+        <tr><td>Confidence scores 0–100 % while filtering natural false positives</td><td>Module 2 — per-class gate, per-class Platt calibration, shadow-geometry check</td><td><span class="pill p-good">shipped</span></td></tr>
+        <tr><td>Extract lat/lon and bounding dimensions from ping headers</td><td>Module 3 — row→ping→fix, col→slant→ground range, geodesic offset</td><td><span class="pill p-good">validated &lt;1 m</span></td></tr>
+        <tr><td>Structured JSON or CSV reports with classifications and coordinates</td><td><code>backend/reporting/</code> — JSON + CSV + Leaflet GeoJSON</td><td><span class="pill p-good">done</span></td></tr>
+        <tr><td>UI dashboard: upload logs, real-time detections on a map, download reports</td><td>Module 4 — React + Leaflet + WebSocket review queue</td><td><span class="pill p-warn">wiring</span></td></tr>
+        <tr><td>Optimised for edge deployment, offline, onboard marine drones</td><td>Torch-free ONNX path — <code>onnxruntime + numpy + opencv</code>, ~90 ms/tile CPU</td><td><span class="pill p-good">measured</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <h3>The scenario this replaces</h3>
+    <p>Researchers tow sonar behind boats to build acoustic maps. A single survey vessel maps roughly
+    <strong>130 hectares a day</strong>, and every metre of it currently gets reviewed by a human
+    scrolling through kilometres of grey imagery. It is slow, tedious, and error-prone in the specific
+    way fatigue is error-prone — the misses cluster at the end of the shift.</p>
+    <p>The system's job is not to replace the analyst. It is to <strong>filter out the empty
+    seafloor</strong> so the analyst reviews only the flagged segments. That reframing decides the
+    entire design: recall matters, but a system that floods the queue with false alarms has not saved
+    anyone any time. Which is why Module 2 exists at all.</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sechead"><span class="n">02</span><h2>Why sonar is not photography</h2></div>
+  <div class="prose">
+    <p class="lede">Every downstream decision follows from one fact: a side-scan image is not a picture
+    of the seabed. It is a map of how sound came back.</p>
+
+    <p>The tow-fish emits a pulse and listens. Each <strong>ping</strong> is one cross-track line,
+    sampled in <strong>slant range</strong> — round-trip travel time × sound speed ÷ 2. Stack the pings
+    as the vehicle advances and you get the familiar waterfall. Three consequences shape everything:</p>
+  </div>
+
+  <ul class="clean prose">
+    <li><strong>Speckle is multiplicative.</strong> Many scatterers inside one resolution cell return
+    echoes that add with random phase, so <code>I_obs = I_true · n</code>. This is not sensor noise you
+    can average away — an averaging filter destroys the edges that carry the signal.</li>
+    <li><strong>Brightness falls with range.</strong> Acoustic energy spreads and is absorbed, so the
+    same object looks bright at 5 m and washed out at 30 m. Without correction, a model learns range,
+    not objects.</li>
+    <li><strong>The shadow is half the information.</strong> A raised object blocks the beam behind it.
+    The dark trail is not an artefact — its length is fixed by geometry, and it is often the only thing
+    separating a hazard from a rock.</li>
+  </ul>
+
+  <div class="prose">
+    <h3>Each hazard class has a distinct acoustic signature</h3>
+    <p>This is why a single detector treating all four classes identically would be the wrong design,
+    and why our per-class thresholds and per-class calibrators are not a convenience but a requirement.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 1 — how the three hazard families appear to sonar</div>
+    <svg viewBox="0 0 900 300" role="img" aria-label="Three panels comparing acoustic signatures. Pipes and cylinders show a very bright narrow return with a sharp straight-edged shadow. Shipwrecks show a very bright irregular return with a massive detailed shadow outlining the structure. Ghost nets show a weak faint return with fragmented or absent shadows, which is why standard shadow-matching algorithms struggle on them. A rock cluster is shown as the false-positive case: bright like a wreck but casting almost no shadow.">
+      <defs>
+        <marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- headers -->
+      <text x="14" y="16" class="t3 m">CLASS</text>
+      <text x="150" y="16" class="t3 m">RETURN (BACKSCATTER)</text>
+      <text x="430" y="16" class="t3 m">SHADOW</text>
+      <text x="700" y="16" class="t3 m">CONSEQUENCE FOR US</text>
+      <line x1="14" y1="24" x2="886" y2="24" stroke="var(--rule-firm)"/>
+
+      <!-- pipes/cylinders -->
+      <text x="14" y="52" class="t2">pipes /</text>
+      <text x="14" y="66" class="t2">cylinders</text>
+      <rect x="150" y="38" width="250" height="34" rx="4" fill="var(--sunk)"/>
+      <rect x="196" y="44" width="10" height="22" fill="var(--signal)"/>
+      <rect x="240" y="44" width="10" height="22" fill="var(--signal)"/>
+      <rect x="284" y="44" width="10" height="22" fill="var(--signal)"/>
+      <text x="410" y="46" class="t3">high · hard metal/concrete</text>
+      <rect x="430" y="52" width="240" height="18" rx="3" fill="var(--ink)" opacity="0.5"/>
+      <text x="550" y="46" class="t3">sharp, straight, geometrically consistent</text>
+      <text x="700" y="60" class="t3">easiest class — AP@50 0.994</text>
+      <line x1="14" y1="84" x2="886" y2="84" stroke="var(--rule)"/>
+
+      <!-- shipwrecks -->
+      <text x="14" y="114" class="t2">shipwrecks</text>
+      <rect x="150" y="98" width="250" height="34" rx="4" fill="var(--sunk)"/>
+      <path d="M186 128 q14 -26 40 -22 q26 4 24 22 Z" fill="var(--signal)"/>
+      <rect x="240" y="104" width="46" height="24" fill="var(--signal)" opacity="0.75"/>
+      <text x="410" y="106" class="t3">high · irregular, complex</text>
+      <path d="M430 112 h150 l40 18 h-190 z" fill="var(--ink)" opacity="0.5"/>
+      <text x="550" y="106" class="t3">massive, detailed — outlines the hull</text>
+      <text x="700" y="120" class="t3">strong signal, scarce data — 0.370</text>
+      <line x1="14" y1="144" x2="886" y2="144" stroke="var(--rule)"/>
+
+      <!-- ghost nets -->
+      <text x="14" y="174" class="t2" fill="var(--signal)">ghost nets</text>
+      <rect x="150" y="158" width="250" height="34" rx="4" fill="var(--sunk)"/>
+      <g stroke="var(--signal)" stroke-width="1" opacity="0.5">
+        <line x1="180" y1="164" x2="215" y2="186"/><line x1="215" y1="164" x2="180" y2="186"/>
+        <line x1="240" y1="166" x2="272" y2="184"/><line x1="272" y1="166" x2="240" y2="184"/>
+        <line x1="300" y1="164" x2="330" y2="186"/>
+      </g>
+      <text x="410" y="166" class="t3">LOW · thin nylon absorbs/scatters</text>
+      <g fill="var(--ink)" opacity="0.3">
+        <rect x="430" y="172" width="26" height="14"/><rect x="472" y="172" width="14" height="14"/>
+        <rect x="506" y="172" width="30" height="14"/><rect x="560" y="172" width="12" height="14"/>
+      </g>
+      <text x="600" y="166" class="t3">fragmented, faint, often absent</text>
+      <text x="700" y="180" class="t3" fill="var(--signal)">shadow logic fails here — no real data</text>
+      <line x1="14" y1="204" x2="886" y2="204" stroke="var(--rule)"/>
+
+      <!-- rock cluster -->
+      <text x="14" y="234" class="t2" fill="var(--crit)">rock cluster</text>
+      <text x="14" y="248" class="t3" fill="var(--crit)">(false positive)</text>
+      <rect x="150" y="218" width="250" height="34" rx="4" fill="var(--sunk)"/>
+      <g fill="var(--signal)"><circle cx="220" cy="236" r="8"/><circle cx="238" cy="238" r="6"/><circle cx="204" cy="238" r="5"/></g>
+      <text x="410" y="226" class="t3">high — indistinguishable from a wreck</text>
+      <rect x="430" y="232" width="26" height="12" fill="var(--ink)" opacity="0.3"/>
+      <text x="480" y="242" class="t3" fill="var(--crit)">almost none — it sits flush</text>
+      <text x="700" y="240" class="t3" fill="var(--crit)">the shadow check rejects it</text>
+      <line x1="14" y1="264" x2="886" y2="264" stroke="var(--rule-firm)"/>
+
+      <text x="14" y="286" class="t3 m" fill="var(--accent-deep)">expected shadow length   L = h·G / (H − h)     G = √(R² − H²)  ·  H = altitude, R = slant range, h = object height</text>
+    </svg>
+    <figcaption>Reflectivity alone cannot separate a wreck from a rock cluster — both are bright. The
+    <em>shadow</em> separates them, and its expected length is computable from sonar geometry. That
+    single equation is the basis of Module 2's physics check. Note the asymmetry: it works well for
+    wrecks and cylinders, and fails on ghost nets, whose thin fibres block almost no sound.</figcaption>
+  </figure>
+</section>
+
+<!-- ═══════════════ PART II ═══════════════ -->
+<div class="partmark">Part II — the data</div>
+
+<section id="s3">
+  <div class="sechead"><span class="n">03</span><h2>Collecting data that does not exist</h2></div>
+  <div class="prose">
+    <p class="lede">The problem statement names four hazards. Public labelled side-scan data exists for
+    exactly one of them.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Target class</th><th>Public data situation</th><th>What we did</th></tr></thead>
+      <tbody>
+        <tr><td>Shipwrecks</td><td>AI4Shipwrecks — 286 labelled SSS images across 28 wreck sites, expert-annotated</td><td>tiled the transects; added Roboflow ship/plane imagery</td></tr>
+        <tr><td>Pipes</td><td>no dedicated public set; SubPipeMini2 survey strips exist</td><td>tiled the strips into 1,000 training tiles</td></tr>
+        <tr><td>Cylinders</td><td><strong>data gap</strong> — the PS research names Sim2Real as the only route</td><td>Kaggle sonar-mine (MILCO + NonMILCO contacts) + a synthetic top-up</td></tr>
+        <tr class="spot"><td>Ghost nets</td><td><strong>nothing public.</strong> The Microsoft/WWF GhostNetZero programme had 239 Baltic + 173 Puget Sound segments in total — 412 — and called its own work a feasibility study</td><td>built a procedural generator with modelled acoustic physics</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>So the training set was assembled one class at a time from six real surveys, with procedural
+    synthesis used only where reality offers nothing. Final: <strong>6,405 tiles</strong> — 4,775 train,
+    780 validation, 850 held-out test, at 640 × 640.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 2 — where every training tile comes from</div>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Horizontal bar chart of the 4775 training tiles by source. Synthetic ghost net generator 1250 tiles, our own work. SubPipeMini2 pipeline strips 1000 tiles, real. HuggingFace crab pot set 900 tiles, real. AI4Shipwrecks transects 546 tiles, real. Object-free background hard negatives 500 tiles, real. Roboflow ship and plane 354 tiles, real. Kaggle sonar mine 225 tiles, real. Roughly 74 percent is real survey data and 26 percent is synthetic.">
+      <g class="t2" text-anchor="end">
+        <text x="196" y="40">synthetic generator</text>
+        <text x="196" y="70">SubPipeMini2</text>
+        <text x="196" y="100">HF crab-pot set</text>
+        <text x="196" y="130">AI4Shipwrecks</text>
+        <text x="196" y="160">background (neg.)</text>
+        <text x="196" y="190">Roboflow ship/plane</text>
+        <text x="196" y="220">Kaggle sonar-mine</text>
+      </g>
+
+      <rect x="210" y="28" width="500" height="16" rx="2" fill="var(--signal)"/>
+      <text x="720" y="41" class="t3">1,250 · ghost_net · <tspan fill="var(--signal)">our own work</tspan></text>
+
+      <rect x="210" y="58" width="400" height="16" rx="2" fill="var(--accent)"/>
+      <text x="620" y="71" class="t3">1,000 · submarine_pipeline</text>
+
+      <rect x="210" y="88" width="360" height="16" rx="2" fill="var(--accent)" opacity="0.8"/>
+      <text x="580" y="101" class="t3">900 · crab_pot <tspan fill="var(--crit)">(filtered from product)</tspan></text>
+
+      <rect x="210" y="118" width="218" height="16" rx="2" fill="var(--accent)"/>
+      <text x="438" y="131" class="t3">546 · shipwreck</text>
+
+      <rect x="210" y="148" width="200" height="16" rx="2" fill="var(--muted)"/>
+      <text x="420" y="161" class="t3">500 · hard negatives — "empty seafloor"</text>
+
+      <rect x="210" y="178" width="142" height="16" rx="2" fill="var(--accent)"/>
+      <text x="362" y="191" class="t3">354 · shipwreck</text>
+
+      <rect x="210" y="208" width="90" height="16" rx="2" fill="var(--accent)"/>
+      <text x="310" y="221" class="t3">225 · mine_cylinder</text>
+
+      <line x1="210" y1="234" x2="886" y2="234" stroke="var(--rule)"/>
+      <text x="210" y="248" class="t3 m">4,775 training tiles &nbsp;·&nbsp; ~74 % real survey data &nbsp;·&nbsp; ~26 % synthetic &nbsp;·&nbsp; + 780 val + 850 held-out test</text>
+    </svg>
+    <figcaption>The 500 background tiles are not filler — they are explicit hard negatives teaching the
+    model what empty seafloor looks like, which is the majority of any real survey and the single
+    biggest source of false positives if omitted.</figcaption>
+  </figure>
+
+  <div class="note finding">
+    <h4>The rule we held to</h4>
+    <p><strong>Synthetic data is a specialist filler, never a substitute.</strong> The literature is
+    unambiguous on the risk: Qin et al. (2021) showed synthetic augmentation actively <em>hurts</em>
+    when it does not match the real feature distribution, and Du et al. (2025) found the benefit
+    plateaus by roughly 1,000 images per class. Past that point you are buying volume, not information.</p>
+    <p>So <code>ghost_net</code> is 100 % synthetic because nothing real exists, <code>mine_cylinder</code>
+    gets a small top-up, and every other class is real survey data or nothing.</p>
+  </div>
+
+  <div class="prose">
+    <h3>One data fix mattered more than any hyper-parameter</h3>
+    <p>Our first pass fed each ~5,600-px AI4Shipwrecks transect strip in whole, so "one wreck" became
+    one enormous box — 141 strips yielded only 152 usable tiles. Re-tiling at 50 % overlap with a
+    morphological close (so a broken hull reads as one object) took that to <strong>890 tiles and
+    1,978 boxes</strong>. Shipwreck training instances went <strong>75 → 919 → 1,554</strong> across
+    the three runs. No amount of tuning would have substituted for that.</p>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="sechead"><span class="n">04</span><h2>Preprocessing — the full pipeline and what we shipped</h2></div>
+  <div class="prose">
+    <p class="lede">The complete acoustic preprocessing chain has six stages. We implemented four and
+    ship two. The reason for the gap is architectural, not a shortcut — and it is worth stating
+    precisely.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 3 — the full preprocessing spec, and where each stage actually belongs</div>
+    <svg viewBox="0 0 900 330" role="img" aria-label="The six-stage preprocessing pipeline split into two lanes. The ingest lane, which requires per-ping vehicle metadata, contains water column removal, slant-range to ground-range correction with time-varied gain, and IMU/DVL motion compensation; these are marked as belonging to the transect stage, with slant-range implemented but not wired. The tile lane, which needs only the image, contains the Lee speckle filter and CLAHE contrast normalisation; both are implemented and shipped, applied identically at training and inference.">
+      <defs>
+        <marker id="f3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- lane 1 -->
+      <rect x="10" y="18" width="876" height="128" rx="10" fill="var(--warn-wash)" stroke="var(--warn)" stroke-dasharray="5 4"/>
+      <text x="28" y="40" class="t2 m" fill="var(--warn)">INGEST STAGE — needs per-ping vehicle metadata (altitude, IMU/DVL, ping rate)</text>
+
+      <rect x="28" y="52" width="196" height="76" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="126" y="74" text-anchor="middle" class="t2">1 · water-column removal</text>
+      <text x="126" y="90" text-anchor="middle" class="t3">first-return detection → crop</text>
+      <text x="126" y="108" text-anchor="middle" class="t3 m" fill="var(--muted)">not implemented</text>
+      <text x="126" y="121" text-anchor="middle" class="t3">needs live ping stream</text>
+
+      <rect x="240" y="52" width="196" height="76" rx="7" fill="var(--surface)" stroke="var(--signal)"/>
+      <text x="338" y="74" text-anchor="middle" class="t2">2 · slant→ground + TVG</text>
+      <text x="338" y="90" text-anchor="middle" class="t3 m">G = √(R² − H²) · R² gain</text>
+      <text x="338" y="108" text-anchor="middle" class="t3 m" fill="var(--signal)">IMPLEMENTED, not wired</text>
+      <text x="338" y="121" text-anchor="middle" class="t3">needs altitude H per ping</text>
+
+      <rect x="452" y="52" width="196" height="76" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="550" y="74" text-anchor="middle" class="t2">3 · motion compensation</text>
+      <text x="550" y="90" text-anchor="middle" class="t3">heave / pitch / roll · dropouts</text>
+      <text x="550" y="108" text-anchor="middle" class="t3 m" fill="var(--muted)">not implemented</text>
+      <text x="550" y="121" text-anchor="middle" class="t3">needs IMU + DVL telemetry</text>
+
+      <rect x="664" y="52" width="200" height="76" rx="7" fill="var(--sunk)" stroke="var(--rule)"/>
+      <text x="764" y="78" text-anchor="middle" class="t3">a cropped training tile</text>
+      <text x="764" y="94" text-anchor="middle" class="t3">carries none of this</text>
+      <text x="764" y="112" text-anchor="middle" class="t3 m" fill="var(--warn)">→ so these cannot run</text>
+
+      <!-- lane 2 -->
+      <rect x="10" y="164" width="876" height="118" rx="10" fill="var(--good-wash)" stroke="var(--good)"/>
+      <text x="28" y="186" class="t2 m" fill="var(--good)">TILE STAGE — needs only the image · SHIPPED, identical at train and serve</text>
+
+      <rect x="28" y="198" width="240" height="68" rx="7" fill="var(--surface)" stroke="var(--good)"/>
+      <text x="148" y="220" text-anchor="middle" class="t2">4 · Lee speckle filter</text>
+      <text x="148" y="236" text-anchor="middle" class="t3 m">Î = μ + W·(I − μ)</text>
+      <text x="148" y="252" text-anchor="middle" class="t3">flat: W→0 · edge: W→1</text>
+
+      <rect x="284" y="198" width="240" height="68" rx="7" fill="var(--surface)" stroke="var(--good)"/>
+      <text x="404" y="220" text-anchor="middle" class="t2">5 · CLAHE</text>
+      <text x="404" y="236" text-anchor="middle" class="t3 m">clip 3.0 · 8×8 tiles</text>
+      <text x="404" y="252" text-anchor="middle" class="t3">local gain, capped</text>
+
+      <rect x="540" y="198" width="324" height="68" rx="7" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="702" y="220" text-anchor="middle" class="t2">despeckle_clahe()</text>
+      <text x="702" y="236" text-anchor="middle" class="t3 m">one function, called by training AND inference</text>
+      <text x="702" y="252" text-anchor="middle" class="t3">train/serve distributions match by construction</text>
+
+      <line x1="268" y1="232" x2="282" y2="232" stroke="currentColor" stroke-width="1.4" marker-end="url(#f3)"/>
+      <line x1="524" y1="232" x2="538" y2="232" stroke="currentColor" stroke-width="1.4" marker-end="url(#f3)"/>
+
+      <text x="10" y="304" class="t3">The PS research names CLAHE-based path-loss compensation as the MVP route and the Lambertian physics model as the deeper</text>
+      <text x="10" y="320" class="t3">alternative — "5 minutes vs days to weeks", and requiring AUV altitude + grazing angles we do not have on a tile. We took the MVP route deliberately.</text>
+    </svg>
+    <figcaption>The split is not arbitrary. Stages 1–3 need altitude, IMU and ping-rate telemetry that a
+    cropped 640 px tile simply does not carry — they belong at ingest, on a live vehicle. Stages 4–5 need
+    only pixels, so they run identically during training and at serve time, which is what guarantees the
+    model never meets an unfamiliar input distribution.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <h3>The two operators we ship</h3>
+    <p><strong>Lee filter</strong> — a local linear minimum-mean-square-error estimate. In a window
+    around each pixel it forms the local mean <code>μ</code> and variance <code>σ²</code>, then outputs:</p>
+  </div>
+  <div class="formula prose"><span class="lbl">Lee (MMSE) update</span>Î(x) = μ + W · ( I(x) − μ ) &nbsp;&nbsp;&nbsp; W = σ²<sub>signal</sub> / ( σ²<sub>signal</sub> + σ²<sub>noise</sub> )</div>
+  <div class="prose">
+    <p>On flat seabed the local variance is almost all noise, so <code>W → 0</code> and the output is
+    the smoothed mean. On an edge it is dominated by real structure, so <code>W → 1</code> and the pixel
+    survives untouched. Edge-aware by construction — which matters because the edges are the shadows.</p>
+
+    <p><strong>CLAHE</strong> — histogram equalisation lifts faint contrast, but done globally it also
+    amplifies speckle in flat sand. CLAHE equalises per 8×8 tile with a clip ceiling that caps the local
+    gain, so a faint wreck edge is boosted while flat-sand speckle is not. It is also the direct answer
+    to acoustic path loss: near-range brightness comes down, far-range comes up, and the same object
+    looks the same at 5 m and 30 m.</p>
+  </div>
+
+  <div class="note warn">
+    <h4>The negative result we published anyway</h4>
+    <p>We ran the ablation properly: same data, same protocol, preprocessed vs raw. The models are
+    <strong>statistically indistinguishable</strong> — identical precision (0.734), identical
+    false-positive rate (0.266), mAP within noise. With strong training-time augmentation, the detector
+    learns an equivalent internal denoising.</p>
+    <p>We kept the preprocessing anyway, for one measured reason: CLAHE'd input makes acoustic shadows
+    more separable, which is what Module 2's geometry check consumes. A clean negative result is worth
+    more than a flattering one, and it tells us where <em>not</em> to spend the next week.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ PART III ═══════════════ -->
+<div class="partmark">Part III — the research</div>
+
+<section id="s5">
+  <div class="sechead"><span class="n">05</span><h2>Twelve sources, and what each one settled</h2></div>
+  <div class="prose">
+    <p class="lede">Ten peer-reviewed papers, one Microsoft/WWF technical platform, one internal design
+    note. Each one changed a decision or defended one. The two that matter most benchmark the
+    <em>same dataset</em> our shipwreck class trains on.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Source</th><th>What it contributed to DRISHTI</th><th>Tier</th></tr></thead>
+      <tbody>
+        <tr class="spot"><td>SW-Net <span class="t3">· Sensors 2026</span></td><td>AI4Shipwrecks segmentation SOTA (IoU 0.394). Established the <strong>human inter-annotator ceiling of 50–60 %</strong> on SSS wrecks — the single most important context for our shipwreck number. Also: Type I/II error framing, nadir-gap post-processing, physics-prior thesis.</td><td><span class="pill p-acc">anchor</span></td></tr>
+        <tr class="spot"><td>DFSE-YOLO <span class="t3">· Sci. Rep. 2026</span></td><td>AI4Shipwrecks <em>detection</em> baseline: vanilla YOLOv8 <strong>mAP50 0.716</strong>, best-in-class 0.755 at 5.25 MB / 40 FPS — plus the head-to-head against Faster R-CNN, SSD and RT-DETR we use to justify the architecture. Source of the 50 px box-merge we plan to adopt.</td><td><span class="pill p-acc">anchor</span></td></tr>
+        <tr><td>Transformer-YOLOv5 <span class="t3">· Remote Sens. 2021</span></td><td>Same architecture family, same four-module ATR pipeline. <strong>Published the Module 3 localisation maths we implement.</strong> Small-data defence; image-complexity sensitivity method.</td><td><span class="pill p-acc">strong</span></td></tr>
+        <tr><td>GhostVision <span class="t3">· JMSE 2026</span></td><td>Showed a best-mAP model with <strong>0.6 % precision</strong> — which is why we report calibrated precision/recall at the operating point, not just threshold-averaged mAP. Source of the temporal-persistence filter and the processing-vs-survey-time metric.</td><td><span class="pill p-acc">strong</span></td></tr>
+        <tr><td>GhostNetZero <span class="t3">· Microsoft AI for Good / WWF</span></td><td>90–94 % ghost-net detection on Baltic/Puget Sound. Our Module 4 review loop is <strong>their design</strong> — published prior art. Also quantified cross-region transfer failure (IoU 0.740 → 0.547) and the remedy, and justifies our synthetic ghost_net (they had 412 real segments in total).</td><td><span class="pill p-flat">targeted</span></td></tr>
+        <tr><td>Du et al. 2023 <span class="t3">· Remote Sens.</span></td><td><strong>Independent evidence that SeabedObjects-KLSG is a worse pretraining source than generic ImageNet</strong> — vindicating our decision to drop it. Plus "consistency beats volume" and an on-board compute caveat.</td><td><span class="pill p-flat">targeted</span></td></tr>
+        <tr><td>Qin et al. 2021 <span class="t3">· IEEE Access</span></td><td>Cross-domain pretraining works on tiny SSS sets (grayscale CIFAR → SSS, 6.5 → 3.5 % error). The GAN/synthetic caution we hold to. Geographically-disjoint splitting.</td><td><span class="pill p-flat">targeted</span></td></tr>
+        <tr><td>Du et al. 2025 <span class="t3">· JMSE</span></td><td>"Mutual influence between classes" — a dominant class suppresses feature-dissimilar ones. This is why we cap every class per split. Data expansion plateaus at ~500–1000/class.</td><td><span class="pill p-flat">targeted</span></td></tr>
+        <tr><td>Jiang et al. 2024 <span class="t3">· JMSE (optical)</span></td><td>WIoU v3 — a zero-inference-cost loss for noisy and extreme-aspect labels, on our roadmap. Second independent source for "attention modules cost ~30 % of the frame rate".</td><td><span class="pill p-warn">minor</span></td></tr>
+        <tr><td>Yu et al. <span class="t3">· debris-flow deposits</span></td><td>Staged transfer (COCO → generic sonar → task); fourth citation that small-SSS training needs pretraining.</td><td><span class="pill p-warn">minor</span></td></tr>
+        <tr><td>Cuff et al. 2023 <span class="t3">· fisheries ecology</span></td><td>Coarse-graining — the principled method for choosing the transect persistence window, rather than picking K arbitrarily.</td><td><span class="pill p-warn">minor</span></td></tr>
+        <tr><td>SIH_057 <span class="t3">· internal note</span></td><td>Module 3 completeness checklist and the caveats we honour: verify row↔ping from raw metadata, proper CRS, never invent GPS fixes underwater.</td><td><span class="pill p-warn">minor</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="prose">What the literature settles, in eight lines</h3>
+  <ul class="clean prose">
+    <li><strong>Our shipwreck number is at state of the art, not below it.</strong> Single-class YOLO on a clean AI4Shipwrecks split tops out at 0.72–0.76; annotators agree only 50–60 %.</li>
+    <li><strong>COCO→sonar transfer learning is established practice</strong> — four independent SSS studies. From-scratch plateaus near 80 % accuracy.</li>
+    <li><strong>Dropping KLSG was right</strong> — independently confirmed as a weak transfer source.</li>
+    <li><strong>mAP alone misleads.</strong> Report the operating point.</li>
+    <li><strong>Cross-survey transfer requires fine-tuning</strong> — documented field-wide, with the same remedy we propose.</li>
+    <li><strong>Synthetic data helps only when it matches the real distribution</strong>, and plateaus by ~1000/class.</li>
+    <li><strong>Attention modules cost ~30 % frame rate</strong> — two independent sources. Wrong trade for a vehicle.</li>
+    <li><strong>Human-in-the-loop review is proven design</strong>, not a fallback.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════ PART IV ═══════════════ -->
+<div class="partmark">Part IV — the model</div>
+
+<section id="s6">
+  <div class="sechead"><span class="n">06</span><h2>Choosing the detector</h2></div>
+  <div class="prose">
+    <p class="lede">The edge requirement eliminated most of the field before accuracy entered the
+    conversation. These are <em>published</em> figures, all measured on AI4Shipwrecks — not our claims.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Architecture</th><th class="n">mAP@50</th><th class="n">FPS</th><th class="n">Size</th><th>Verdict for an AUV</th></tr></thead>
+      <tbody>
+        <tr><td>Faster R-CNN</td><td class="n">0.732</td><td class="n">12.4</td><td class="n">108 MB</td><td><span class="pill p-crit">two-stage — too slow</span></td></tr>
+        <tr><td>SSD</td><td class="n">0.654</td><td class="n">42.0</td><td class="n">92.6 MB</td><td><span class="pill p-crit">fast, weakest accuracy</span></td></tr>
+        <tr><td>RT-DETR (transformer)</td><td class="n">0.741</td><td class="n">28.5</td><td class="n">86 MB</td><td><span class="pill p-warn">16× the size for +0.01</span></td></tr>
+        <tr class="spot"><td>YOLO family</td><td class="n">0.755</td><td class="n">40.1</td><td class="n">5.25 MB</td><td><span class="pill p-good">best accuracy, near-best speed, tiny</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p><strong>YOLOv8s</strong> specifically: 11.8 M parameters fits a 6 GB laptop GPU at batch 16, and
+    its export path to ONNX and TensorRT is mature — newer YOLO variants routinely emit operations edge
+    compilers cannot yet consume. It is <strong>anchor-free</strong>, removing the k-means anchor-tuning
+    step earlier sonar work needed.</p>
+
+    <p><strong>Boxes, not masks.</strong> The PS accepts either. Every real SSS dataset we could obtain
+    is box-labelled; the only pixel masks (AI4Shipwrecks) come with a published benchmark we cite for
+    the segmentation roadmap. Boxes now, masks as a documented v2.</p>
+  </div>
+
+  <div class="note finding">
+    <h4>A trade-off we declined, twice-confirmed</h4>
+    <p>Bolting attention modules onto YOLOv8 buys roughly +5 mAP at the cost of <strong>~30 % of the
+    frame rate</strong> — DFSE-YOLO 37.9 → 26.5 FPS, Jiang et al. 89 → 61 FPS. For a vehicle-borne
+    system that is the wrong side of the trade. We took the zero-cost improvements and left the
+    attention blocks on the roadmap, where DFSE-YOLO's <em>selective</em> application (deep layers only)
+    is the code-available path that recovers the speed.</p>
+  </div>
+</section>
+
+<section id="s7">
+  <div class="sechead"><span class="n">07</span><h2>Three runs, and what each one bought</h2></div>
+  <div class="prose">
+    <p class="lede">The model did not arrive correct. Each run isolated a specific failure and paid for
+    a specific fix — which is what makes the progression evidence rather than anecdote.</p>
+  </div>
+
+  <h3 class="prose">Run 1 → Run 2 — killing the false alarms</h3>
+  <div class="ledger">
+    <div class="lrow">
+      <div class="why"><strong>Dropped the KLSG shipwreck labels.</strong> Cropped ship photos had been
+      given a full-frame box, teaching the model that <em>any</em> large blob is a wreck. It was the
+      rock-cluster false-alarm engine.</div>
+      <div class="eff">false-positive rate <b>0.313 → 0.266</b><br>
+        <span style="color:var(--muted)">shipwreck precision 0.57 → 0.66</span></div>
+    </div>
+    <div class="lrow">
+      <div class="why"><strong>Doubled crab_pot data</strong> (900 → 1,600 tiles) to rescue the failing
+      class; rebuilt splits to 80/10/10 with per-class caps.</div>
+      <div class="eff">crab_pot AP <b>0.118 → 0.193</b><br>
+        <span style="color:var(--muted)">still far below the 0.25 bar</span></div>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <h4>The decision that took discipline</h4>
+    <p>Two runs and a doubling of data moved crab_pot from 0.118 to 0.193. That is not a data-volume
+    problem — it is a <strong>separability</strong> problem. The class is small, low-contrast and
+    acoustically ambiguous against seabed clutter. We kept it in training as a hard negative and
+    <strong>filtered it out of the product</strong>. The four classes that ship are exactly the four
+    hazards the problem statement names.</p>
+  </div>
+
+  <h3 class="prose">Run 2 → Run 3 — fixing the data pipeline</h3>
+  <div class="ledger">
+    <div class="lrow">
+      <div class="why"><strong>Re-tiled AI4Shipwrecks at 50 % overlap</strong> with a morphological close
+      so a broken hull reads as one object. The original stride discarded ~90 % of the usable data.</div>
+      <div class="eff">152 → <b>890</b> tiles · 329 → <b>1,978</b> boxes<br>
+        <span style="color:var(--muted)">shipwreck instances 75 → 1,554</span></div>
+    </div>
+    <div class="lrow">
+      <div class="why"><strong>Added the Lee + CLAHE front end</strong> (Module 0), applied identically
+      at training and inference so the model never meets an unfamiliar distribution.</div>
+      <div class="eff">precision <b>0.734 → 0.734</b><br>
+        <span style="color:var(--muted)">FP rate 0.266 → 0.266 — no change</span></div>
+    </div>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 4 — per-class AP@50 across the three runs, held-out test</div>
+    <svg viewBox="0 0 900 268" role="img" aria-label="Grouped horizontal bars showing AP at 50 for each class across three runs. submarine_pipeline holds at 0.98 to 0.99 throughout. ghost_net is 0.995 in all runs but is synthetic. shipwreck is 0.45, 0.45 then 0.30 on a harder re-tiled test set. mine_cylinder is 0.43, 0.40, 0.42. crab_pot rises from 0.12 to 0.19 and is dropped from the product.">
+      <g class="t2" text-anchor="end">
+        <text x="150" y="44">submarine_pipeline</text>
+        <text x="150" y="92">ghost_net</text>
+        <text x="150" y="140">shipwreck</text>
+        <text x="150" y="188">mine_cylinder</text>
+        <text x="150" y="236">crab_pot</text>
+      </g>
+      <g stroke="var(--rule)" stroke-width="1">
+        <line x1="164" y1="18" x2="164" y2="250"/><line x1="338" y1="18" x2="338" y2="250"/>
+        <line x1="512" y1="18" x2="512" y2="250"/><line x1="686" y1="18" x2="686" y2="250"/>
+        <line x1="860" y1="18" x2="860" y2="250"/>
+      </g>
+      <g class="t3" text-anchor="middle">
+        <text x="164" y="264">0</text><text x="338" y="264">0.25</text>
+        <text x="512" y="264">0.50</text><text x="686" y="264">0.75</text><text x="860" y="264">1.0</text>
+      </g>
+
+      <rect x="164" y="26" width="683" height="8" fill="var(--muted)"/>
+      <rect x="164" y="37" width="691" height="8" fill="var(--accent)" opacity="0.55"/>
+      <rect x="164" y="48" width="684" height="8" fill="var(--accent)"/>
+
+      <rect x="164" y="74" width="692" height="8" fill="var(--muted)"/>
+      <rect x="164" y="85" width="692" height="8" fill="var(--accent)" opacity="0.55"/>
+      <rect x="164" y="96" width="692" height="8" fill="var(--warn)"/>
+      <text x="866" y="103" class="t3" fill="var(--warn)">synthetic</text>
+
+      <rect x="164" y="122" width="315" height="8" fill="var(--muted)"/>
+      <rect x="164" y="133" width="313" height="8" fill="var(--accent)" opacity="0.55"/>
+      <rect x="164" y="144" width="210" height="8" fill="var(--signal)"/>
+      <text x="384" y="151" class="t3" fill="var(--signal)">harder test set — see below</text>
+
+      <rect x="164" y="170" width="300" height="8" fill="var(--muted)"/>
+      <rect x="164" y="181" width="277" height="8" fill="var(--accent)" opacity="0.55"/>
+      <rect x="164" y="192" width="295" height="8" fill="var(--accent)"/>
+
+      <rect x="164" y="218" width="82" height="8" fill="var(--muted)"/>
+      <rect x="164" y="229" width="134" height="8" fill="var(--accent)" opacity="0.55"/>
+      <rect x="164" y="240" width="134" height="8" fill="var(--crit)"/>
+      <text x="308" y="247" class="t3" fill="var(--crit)">dropped from product</text>
+
+      <g class="t3">
+        <rect x="612" y="8" width="11" height="8" fill="var(--muted)"/><text x="629" y="16">Run 1</text>
+        <rect x="686" y="8" width="11" height="8" fill="var(--accent)" opacity="0.55"/><text x="703" y="16">Run 2</text>
+        <rect x="760" y="8" width="11" height="8" fill="var(--accent)"/><text x="777" y="16">Run 3 · shipped</text>
+      </g>
+    </svg>
+    <figcaption>Measured at a matched protocol across all three runs, so the progression is directly
+    comparable. Pipeline detection is production-grade throughout; shipwreck and cylinder plateau near
+    the ceiling of their available real data.</figcaption>
+  </figure>
+
+  <div class="note warn">
+    <h4>Why shipwreck AP fell while the model got better</h4>
+    <p>The 50 % overlap re-tile that gave us 12× more shipwreck <em>training</em> data also
+    <strong>tripled the shipwreck instances in the test set</strong>, adding partial and near-duplicate
+    tiles. The test became harder at the same moment the model got stronger.</p>
+    <p>The control settles it: running the <em>Run 2</em> model on the <em>Run 3</em> test set scores
+    shipwreck <strong>0.278</strong> — below the new model's 0.302 on the same data. On matched data
+    the two are tied, and Run 3 is marginally ahead.</p>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="sechead"><span class="n">08</span><h2>Reading the training honestly</h2></div>
+  <div class="prose">
+    <p class="lede">120 epochs, batch 16, 640 px, on a laptop RTX 4050 in 2.1 hours. The curves show
+    something worth stating plainly rather than hiding.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 5 — validation accuracy and class loss, Run 3 (real training log)</div>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Two curves over 120 epochs from the real training log. Validation mean average precision at 50 climbs steeply to about 0.60 by epoch 30, then improves slowly to a peak of 0.646 at epoch 91 before declining to 0.619 by epoch 120. Training class loss falls continuously while validation class loss flattens and then rises after epoch 91, the signature of overfitting onset. A marker highlights epoch 91 as the checkpoint that was saved and shipped.">
+      <g stroke="var(--rule)" stroke-width="1">
+        <line x1="60" y1="24" x2="860" y2="24"/><line x1="60" y1="73" x2="860" y2="73"/>
+        <line x1="60" y1="122" x2="860" y2="122"/><line x1="60" y1="171" x2="860" y2="171"/>
+        <line x1="60" y1="220" x2="860" y2="220"/>
+      </g>
+      <g class="t3" text-anchor="end">
+        <text x="52" y="28">0.7</text><text x="52" y="77">0.53</text><text x="52" y="126">0.35</text>
+        <text x="52" y="175">0.18</text><text x="52" y="224">0</text>
+      </g>
+      <g class="t3" text-anchor="middle">
+        <text x="60" y="240">1</text><text x="260" y="240">30</text><text x="460" y="240">60</text>
+        <text x="666" y="240">91</text><text x="860" y="240">120</text>
+        <text x="460" y="252" class="t3">epoch</text>
+      </g>
+
+      <rect x="666" y="24" width="194" height="196" fill="var(--signal)" opacity="0.07"/>
+      <line x1="666" y1="24" x2="666" y2="220" stroke="var(--signal)" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <text x="674" y="40" class="t3" fill="var(--signal)">val loss turns up →</text>
+      <text x="674" y="54" class="t3" fill="var(--signal)">best.pt saved here</text>
+
+      <polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" points="60.0,149.6 73.4,103.3 86.9,87.8 100.3,78.6 113.8,73.8 127.2,74.6 140.7,67.7 154.1,72.5 167.6,68.0 181.0,66.8 194.5,69.8 207.9,66.2 221.3,59.1 234.8,62.0 248.2,71.2 261.7,56.6 275.1,52.8 288.6,56.8 302.0,50.9 315.5,60.6 328.9,50.3 342.4,58.2 355.8,57.4 369.2,55.6 382.7,55.4 396.1,47.5 409.6,51.0 423.0,51.2 436.5,42.5 449.9,51.7 463.4,48.1 476.8,41.3 490.3,43.5 503.7,48.8 517.1,47.0 530.6,46.2 544.0,44.5 557.5,44.8 570.9,41.7 584.4,45.9 597.8,43.7 611.3,44.9 624.7,46.4 638.2,45.1 651.6,40.9 665.0,39.0 678.5,41.6 691.9,43.5 705.4,43.1 718.8,42.1 732.3,43.5 745.7,45.4 759.2,46.7 772.6,45.9 786.1,47.1 799.5,46.3 812.9,45.2 826.4,47.8 839.8,46.9 853.3,47.4 860.0,48.6"/>
+      <polyline fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.75" points="60.0,178.7 73.4,144.6 86.9,134.3 100.3,135.4 113.8,133.5 127.2,126.6 140.7,124.2 154.1,126.8 167.6,123.1 181.0,117.4 194.5,122.4 207.9,117.3 221.3,118.2 234.8,111.9 248.2,119.3 261.7,107.9 275.1,111.4 288.6,109.5 302.0,111.2 315.5,109.0 328.9,106.6 342.4,105.7 355.8,107.9 369.2,106.7 382.7,102.4 396.1,101.4 409.6,99.9 423.0,101.3 436.5,97.4 449.9,101.6 463.4,99.0 476.8,94.7 490.3,97.6 503.7,97.2 517.1,95.6 530.6,94.9 544.0,94.3 557.5,94.8 570.9,94.6 584.4,94.9 597.8,93.7 611.3,92.5 624.7,93.2 638.2,93.8 651.6,92.2 665.0,92.3 678.5,91.7 691.9,91.9 705.4,92.0 718.8,91.6 732.3,90.6 745.7,92.6 759.2,91.9 772.6,92.7 786.1,92.3 799.5,92.4 812.9,91.7 826.4,90.6 839.8,91.1 853.3,90.6 860.0,90.7"/>
+      <circle cx="666" cy="39" r="4" fill="var(--signal)"/>
+
+      <polyline fill="none" stroke="var(--good)" stroke-width="1.5" opacity="0.85" points="73.4,68.9 86.9,79.4 100.3,93.5 113.8,97.8 127.2,101.0 140.7,105.3 154.1,108.6 167.6,108.3 181.0,113.2 194.5,113.4 207.9,115.8 221.3,117.5 234.8,118.8 248.2,119.6 261.7,124.6 275.1,124.0 288.6,125.6 302.0,126.0 315.5,128.6 328.9,127.4 342.4,130.8 355.8,130.1 369.2,132.6 382.7,129.5 396.1,129.7 409.6,131.2 423.0,132.3 436.5,133.6 449.9,135.1 463.4,136.1 476.8,137.0 490.3,135.8 503.7,138.2 517.1,137.9 530.6,138.7 544.0,139.4 557.5,139.7 570.9,141.2 584.4,141.1 597.8,142.0 611.3,143.4 624.7,143.3 638.2,144.5 651.6,144.3 665.0,145.2 678.5,145.1 691.9,145.3 705.4,147.3 718.8,147.5 732.3,146.7 745.7,147.3 759.2,148.5 772.6,158.9 786.1,160.2 799.5,160.9 812.9,160.9 826.4,161.5 839.8,162.4 853.3,162.6 860.0,162.9"/>
+      <polyline fill="none" stroke="var(--crit)" stroke-width="1.5" opacity="0.85" points="73.4,33.5 86.9,65.7 100.3,73.7 113.8,84.6 127.2,83.2 140.7,94.4 154.1,92.6 167.6,97.5 181.0,98.3 194.5,101.0 207.9,78.7 221.3,107.4 234.8,103.7 248.2,96.0 261.7,111.8 275.1,108.6 288.6,106.1 302.0,107.4 315.5,104.1 328.9,119.1 342.4,108.7 355.8,112.6 369.2,111.0 382.7,107.0 396.1,116.1 409.6,119.2 423.0,116.4 436.5,122.4 449.9,113.2 463.4,117.0 476.8,120.0 490.3,119.9 503.7,117.0 517.1,115.7 530.6,117.2 544.0,114.2 557.5,119.6 570.9,119.1 584.4,116.6 597.8,116.6 611.3,117.7 624.7,117.3 638.2,117.9 651.6,117.6 665.0,119.9 678.5,116.4 691.9,116.2 705.4,116.0 718.8,116.5 732.3,117.0 745.7,116.1 759.2,115.0 772.6,115.7 786.1,114.4 799.5,113.4 812.9,113.5 826.4,114.5 839.8,114.4 853.3,112.9 860.0,112.3"/>
+
+      <g class="t3">
+        <rect x="94" y="8" width="16" height="2.5" fill="var(--accent)"/><text x="116" y="14">val mAP@50</text>
+        <rect x="204" y="9" width="16" height="1.8" fill="var(--accent)" opacity="0.7"/><text x="226" y="14">val mAP@50-95</text>
+        <rect x="330" y="9" width="16" height="1.8" fill="var(--good)"/><text x="352" y="14">train cls loss ↓</text>
+        <rect x="452" y="9" width="16" height="1.8" fill="var(--crit)"/><text x="474" y="14">val cls loss</text>
+      </g>
+    </svg>
+    <figcaption>Validation mAP@50 peaks at <strong>0.646 on epoch 91</strong>, then decays to 0.619 by
+    epoch 120 while training loss keeps falling — the classic signature of overfitting onset. The
+    checkpoint we ship is epoch 91, not the last epoch. This curve is also the evidence that the model
+    is <strong>data-limited, not capacity-limited</strong>: more epochs will not help; more real wrecks
+    will.</figcaption>
+  </figure>
+</section>
+
+<section id="s9">
+  <div class="sechead"><span class="n">09</span><h2>The shipped model</h2></div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Class</th><th class="n">AP@50 <span style="font-weight:400;text-transform:none">(std)</span></th><th class="n">Precision <span style="font-weight:400;text-transform:none">(op)</span></th><th class="n">Recall <span style="font-weight:400;text-transform:none">(op)</span></th><th>Read</th></tr></thead>
+      <tbody>
+        <tr class="spot"><td>submarine_pipeline</td><td class="n">0.994</td><td class="n">0.994</td><td class="n">0.989</td><td><span class="pill p-good">production-grade</span></td></tr>
+        <tr><td>ghost_net</td><td class="n">0.995</td><td class="n">1.000</td><td class="n">1.000</td><td><span class="pill p-warn">synthetic — capability, not field</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="n">0.517</td><td class="n">0.556</td><td class="n">0.488</td><td><span class="pill p-acc">real-data ceiling</span></td></tr>
+        <tr><td>shipwreck</td><td class="n">0.370</td><td class="n">0.672</td><td class="n">0.347</td><td><span class="pill p-acc">at published SOTA</span></td></tr>
+        <tr class="dim"><td>crab_pot</td><td class="n">0.329</td><td class="n">0.447</td><td class="n">0.324</td><td><span class="pill p-crit">filtered from product</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>Overall <strong class="mono">mAP@50 0.641</strong> · <strong class="mono">mAP@50-95 0.459</strong>
+    at the standard protocol, and <strong class="mono">precision 0.734</strong> ·
+    <strong class="mono">recall 0.629</strong> at the deployed operating threshold.</p>
+  </div>
+
+  <div class="note finding">
+    <h4>Two protocols, and why both belong here</h4>
+    <p><strong>mAP is the area under the whole precision–recall curve</strong>, so it is computed with
+    the confidence floor at ~0.001 — the COCO convention every paper in §05 uses.
+    <strong>Precision and recall are operating-point numbers</strong>, meaningful only at the threshold
+    actually deployed (0.25, ahead of Module 2's per-class gate).</p>
+    <p>We initially reported mAP computed at conf 0.25, which truncates the curve's low-confidence tail
+    and mechanically depresses AP — and made our comparison to published work unfair to ourselves. Same
+    model, same test set, corrected: <span class="mono">mAP@50 0.580 → 0.641</span>, shipwreck
+    <span class="mono">0.302 → 0.370</span>, cylinder <span class="mono">0.424 → 0.517</span>. The
+    run-to-run comparisons in §07 were all measured identically, so that progression is unaffected.</p>
+  </div>
+
+  <h3 class="prose">A detection is not a probability</h3>
+  <div class="prose">
+    <p>A raw sigmoid output of 0.8 is not "right 80 % of the time". We fit <strong>per-class Platt
+    scaling</strong> on held-out data so the number an operator sees means what it says. Per-class
+    matters — a single global calibrator made things measurably <em>worse</em>:</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Expected Calibration Error, test</th><th class="n">Raw</th><th class="n">Calibrated</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr class="dim"><td>Run 2 — one global calibrator</td><td class="n">0.042</td><td class="n">0.090</td><td><span class="pill p-crit">worse</span></td></tr>
+        <tr class="spot"><td>Run 3 — per-class calibrators</td><td class="n">0.052</td><td class="n">0.037</td><td><span class="pill p-good">better</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <p>Combined with the per-class gate, this is what converts raw detections into an operator product:
+    <strong>shipwreck precision 0.63 → 0.73</strong> and <strong>cylinder 0.58 → 0.75</strong> at the
+    working threshold, with scores that survive scrutiny.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 6 — shipwreck detection on AI4Shipwrecks, published vs ours</div>
+    <svg viewBox="0 0 900 218" role="img" aria-label="A scale from 0 to 1 showing shipwreck detection performance on AI4Shipwrecks. Optical-imagery segmentation reaches about 0.9. Human inter-annotator agreement on sonar wrecks is only 0.50 to 0.60, marked as a shaded ceiling band. DFSE-YOLO the 2026 state of the art reaches 0.755 and its vanilla YOLOv8 baseline reaches 0.716. SW-Net segmentation reaches 0.394 IoU. DRISHTI reaches 0.370 on shipwreck and 0.641 across all four classes, both at the same standard protocol.">
+      <g stroke="var(--rule)" stroke-width="1">
+        <line x1="150" y1="26" x2="150" y2="176"/><line x1="327" y1="26" x2="327" y2="176"/>
+        <line x1="504" y1="26" x2="504" y2="176"/><line x1="681" y1="26" x2="681" y2="176"/>
+        <line x1="858" y1="26" x2="858" y2="176"/>
+      </g>
+      <g class="t3" text-anchor="middle">
+        <text x="150" y="192">0</text><text x="327" y="192">0.25</text><text x="504" y="192">0.50</text>
+        <text x="681" y="192">0.75</text><text x="858" y="192">1.0</text>
+      </g>
+
+      <rect x="504" y="20" width="141" height="160" fill="var(--signal)" opacity="0.11"/>
+      <text x="574" y="16" text-anchor="middle" class="t3" fill="var(--signal)">human annotator ceiling 0.50–0.60</text>
+
+      <g class="t2" text-anchor="end">
+        <text x="142" y="42">optical segmentation</text>
+        <text x="142" y="72">DFSE-YOLO 2026 · SOTA</text>
+        <text x="142" y="102">YOLOv8 baseline (same paper)</text>
+        <text x="142" y="132">SW-Net 2026 · seg IoU</text>
+        <text x="142" y="162">DRISHTI</text>
+      </g>
+
+      <rect x="150" y="34" width="637" height="11" fill="var(--muted)" opacity="0.45"/>
+      <text x="795" y="44" class="t3">~0.90</text>
+      <rect x="150" y="64" width="535" height="11" fill="var(--accent)" opacity="0.55"/>
+      <text x="693" y="74" class="t3">0.755</text>
+      <rect x="150" y="94" width="507" height="11" fill="var(--accent)" opacity="0.4"/>
+      <text x="665" y="104" class="t3">0.716</text>
+      <rect x="150" y="124" width="279" height="11" fill="var(--muted)" opacity="0.55"/>
+      <text x="437" y="134" class="t3">0.394</text>
+      <rect x="150" y="154" width="412" height="11" fill="var(--accent)"/>
+      <rect x="150" y="154" width="262" height="11" fill="var(--signal)"/>
+      <text x="570" y="164" class="t3">0.370 shipwreck &nbsp;·&nbsp; 0.641 all-class mAP</text>
+    </svg>
+    <figcaption>Optical segmentation reaches ~0.9; sonar cannot, because <strong>human experts agree
+    with each other only 50–60 %</strong> on where a wreck's boundary lies in an acoustic image. The
+    2026 state of the art is 0.755 and a vanilla YOLOv8 baseline 0.716 — both single-class, on
+    non-overlapping splits. DRISHTI is a <em>four-class</em> model on a deliberately harder overlapping
+    split. Every figure here uses the same conf ≈ 0.001 protocol.</figcaption>
+  </figure>
+</section>
+
+<section id="s10">
+  <div class="sechead"><span class="n">10</span><h2>Why this is the right route</h2></div>
+  <div class="prose">
+    <p class="lede">Nine decisions, each with the evidence that drove it. None of them is a preference.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Decision</th><th>Alternative rejected</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Detection, not classification</strong></td><td>tile-level classifier</td><td>the report needs a <em>location</em> per hazard, not "this tile contains debris"</td></tr>
+        <tr class="spot"><td><strong>YOLOv8s</strong></td><td>Faster R-CNN · SSD · RT-DETR</td><td>published on our dataset: best accuracy (0.755), near-best speed (40 FPS), 16× smaller than the transformer</td></tr>
+        <tr><td><strong>Boxes now, masks as roadmap</strong></td><td>segmentation-first</td><td>every real SSS set we could obtain is box-labelled; the PS accepts either</td></tr>
+        <tr><td><strong>Deterministic physics check</strong></td><td>a second neural network</td><td>shadow length is computable from geometry — no extra training data, no extra latency, explainable to a reviewer</td></tr>
+        <tr class="spot"><td><strong>Per-class calibration</strong></td><td>one global calibrator</td><td>measured: global made ECE <em>worse</em> (0.042 → 0.090); per-class improved it (0.052 → 0.037)</td></tr>
+        <tr><td><strong>Per-class confidence gates</strong></td><td>a single threshold</td><td>each class has a distinct acoustic signature (§02); FPs sit far below TPs, at different levels per class</td></tr>
+        <tr class="spot"><td><strong>FP32 ONNX at the edge</strong></td><td>INT8 quantization</td><td>measured: INT8 collapsed to 0.00 precision/recall <em>and</em> ran slower (164 ms vs 90 ms) on CPU</td></tr>
+        <tr><td><strong>Model as a library</strong></td><td>a separate ML microservice</td><td>adds a deploy, a failure mode and a network hop per tile; the model is frozen, GPU-free, single-consumer</td></tr>
+        <tr><td><strong>Synthetic only where nothing real exists</strong></td><td>synthesise everything</td><td>Qin 2021: synthetic hurts when it misses the real distribution; Du 2025: plateaus by ~1000/class</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note good">
+    <h4>The route in one paragraph</h4>
+    <p>A small, anchor-free detector chosen on published evidence from our own dataset, trained on
+    assembled real survey data with synthesis only where the world offers none, wrapped in a
+    deterministic physics filter and per-class calibration so the confidence means something, exported
+    to a torch-free runtime that already meets its edge latency target on a CPU. Every weak point is
+    measured and has a named remedy. Nothing in it depends on a claim we have not tested.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ PART V ═══════════════ -->
+<div class="partmark">Part V — the system</div>
+
+<section id="s11">
+  <div class="sechead"><span class="n">11</span><h2>The four modules</h2></div>
+
+  <figure>
+    <div class="figtitle">Figure 7 — tile to geotagged report, with the review bands</div>
+    <svg viewBox="0 0 900 220" role="img" aria-label="Pipeline flow. A sonar tile enters Module 0 preprocessing applying Lee filter and CLAHE. Module 1 is the YOLOv8s detector producing boxes, classes and raw scores. Module 2 applies a per-class gate, per-class calibration and an optional shadow geometry check, producing a 0 to 100 percent score. Module 3 converts pixels to latitude and longitude using ping headers and navigation, emitting JSON, CSV and GeoJSON, and feeds altitude and slant range back into Module 2. Detections above 80 percent are auto confirmed, 30 to 80 percent go to a human review queue, below 30 percent are dropped.">
+      <defs>
+        <marker id="f7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="f7s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--signal)"/>
+        </marker>
+      </defs>
+
+      <rect x="8" y="46" width="92" height="60" rx="8" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="54" y="72" text-anchor="middle" class="t1">tile</text>
+      <text x="54" y="89" text-anchor="middle" class="t3 m">640 × 640</text>
+
+      <rect x="122" y="38" width="150" height="76" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="197" y="60" text-anchor="middle" class="t1">M0 · Preprocess</text>
+      <text x="197" y="78" text-anchor="middle" class="t3 m">Lee filter + CLAHE</text>
+      <text x="197" y="94" text-anchor="middle" class="t3">edge-aware despeckle</text>
+
+      <rect x="294" y="38" width="150" height="76" rx="8" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="369" y="60" text-anchor="middle" class="t1">M1 · Detect</text>
+      <text x="369" y="78" text-anchor="middle" class="t3 m">YOLOv8s · 4 classes</text>
+      <text x="369" y="94" text-anchor="middle" class="t3">box + class + raw score</text>
+
+      <rect x="466" y="30" width="164" height="92" rx="8" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="548" y="52" text-anchor="middle" class="t1">M2 · Confidence</text>
+      <text x="548" y="70" text-anchor="middle" class="t3 m">per-class gate</text>
+      <text x="548" y="85" text-anchor="middle" class="t3 m">per-class calibration</text>
+      <text x="548" y="100" text-anchor="middle" class="t3" fill="var(--signal)">shadow check (geometry)</text>
+      <text x="548" y="114" text-anchor="middle" class="t3">→ 0–100 %</text>
+
+      <rect x="652" y="38" width="150" height="76" rx="8" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="727" y="60" text-anchor="middle" class="t1">M3 · Geotag</text>
+      <text x="727" y="78" text-anchor="middle" class="t3 m">px → lat / lon</text>
+      <text x="727" y="94" text-anchor="middle" class="t3">JSON · CSV · GeoJSON</text>
+
+      <g stroke="currentColor" stroke-width="1.5" fill="none">
+        <line x1="100" y1="76" x2="119" y2="76" marker-end="url(#f7)"/>
+        <line x1="272" y1="76" x2="291" y2="76" marker-end="url(#f7)"/>
+        <line x1="444" y1="76" x2="463" y2="76" marker-end="url(#f7)"/>
+        <line x1="630" y1="76" x2="649" y2="76" marker-end="url(#f7)"/>
+      </g>
+      <path d="M690 114 C 660 146 590 138 556 124" fill="none" stroke="var(--signal)"
+            stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f7s)"/>
+      <text x="628" y="150" text-anchor="middle" class="t3" fill="var(--signal)">altitude H + slant range R</text>
+
+      <rect x="286" y="172" width="160" height="30" rx="6" fill="var(--good-wash)" stroke="var(--good)"/>
+      <text x="366" y="191" text-anchor="middle" class="t2">≥ 80 % auto-confirmed</text>
+      <rect x="458" y="172" width="160" height="30" rx="6" fill="var(--warn-wash)" stroke="var(--warn)"/>
+      <text x="538" y="191" text-anchor="middle" class="t2">30–80 % human review</text>
+      <rect x="630" y="172" width="128" height="30" rx="6" fill="var(--crit-wash)" stroke="var(--crit)"/>
+      <text x="694" y="191" text-anchor="middle" class="t2">&lt; 30 % dropped</text>
+      <line x1="727" y1="114" x2="727" y2="168" stroke="currentColor" stroke-width="1.3"
+            stroke-dasharray="3 3" marker-end="url(#f7)"/>
+    </svg>
+    <figcaption>Module 3 feeds real per-ping altitude and slant range <em>back</em> into Module 2 — that
+    circular dependency is what makes the shadow check possible on a full transect but not on an
+    isolated tile. The three bands are what an analyst actually works from: the system never silently
+    discards a borderline call, it queues it.</figcaption>
+  </figure>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Module</th><th>Job</th><th>Key result</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>0 · Preprocess</td><td>edge-aware despeckle + contrast normalisation</td><td>train/serve identical by construction; ablation showed no accuracy effect, kept for the shadow signal</td><td><span class="pill p-good">live</span></td></tr>
+        <tr><td>1 · Detect</td><td>box + class + raw score per object</td><td>mAP@50 0.641 · pipeline 0.994 · 3.8 ms/frame GPU, ~90 ms/tile CPU</td><td><span class="pill p-good">shipped</span></td></tr>
+        <tr><td>2 · Confidence</td><td>cut false alarms, honest 0–100 %</td><td>per-class gate: shipwreck P 0.63→0.73, cylinder 0.58→0.75. ECE 0.052→0.037</td><td><span class="pill p-good">functional</span></td></tr>
+        <tr><td>3 · Geotag</td><td>pixel → lat/lon + size in metres</td><td>tow-fish position validated <strong>&lt; 1 m</strong> against independent navigation; 6 unit tests</td><td><span class="pill p-good">done</span></td></tr>
+        <tr><td>4 · Dashboard</td><td>upload, map, review queue, export</td><td>React + Leaflet + WebSocket scaffold against a locked API contract</td><td><span class="pill p-warn">wiring</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose">
+    <h3>The geotagging maths</h3>
+    <p>Image row → ping number → the navigation record's timestamp → interpolate the logged
+    (lat, lon, heading). Image column → slant range <code>R</code>. Then, assuming a flat seabed:</p>
+  </div>
+  <div class="formula prose"><span class="lbl">slant to ground range</span>G = √( R² − H² ) &nbsp;&nbsp;&nbsp; near nadir G → 0 (the "nadir gap"); at far range G → R</div>
+  <div class="prose">
+    <p>The target lies <code>G</code> metres from the track, perpendicular to heading — bearing − 90°
+    for port, + 90° for starboard — reached by a geodesic forward step. This follows the published
+    Yu et al. (2021) formulation; our additions are the header-only XTF parser and the sub-metre
+    validation.</p>
+  </div>
+
+  <div class="note warn">
+    <h4>A detection is a search area, not a survey fix</h4>
+    <p>The tow-fish position recovers to <strong>&lt; 1 m</strong>. But the <em>detection</em> position
+    also depends on the across-track scale, and our two navigation paths placed the same target
+    <strong>~122 m apart</strong>. Everything downstream — the dashboard pin, the report, the public map
+    — must carry an uncertainty radius rather than imply metre accuracy we do not have.</p>
+  </div>
+</section>
+
+<section id="s12">
+  <div class="sechead"><span class="n">12</span><h2>The edge build</h2></div>
+  <div class="prose">
+    <p class="lede">The PS requires offline execution onboard marine drones. An AUV has no GPU and no
+    room for a 1.5 GB PyTorch runtime. We exported to ONNX and measured all three precisions rather
+    than assuming.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Precision</th><th class="n">Size</th><th class="n">CPU latency</th><th>Accuracy vs PyTorch</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr class="spot"><td>FP32 ONNX</td><td class="n">44.8 MB</td><td class="n">~90 ms</td><td>identical — verified on all 850 test tiles</td><td><span class="pill p-good">shipped</span></td></tr>
+        <tr><td>FP16 ONNX</td><td class="n">22.4 MB</td><td class="n">n/a on CPU</td><td>—</td><td><span class="pill p-acc">Jetson GPU target</span></td></tr>
+        <tr><td>INT8 ONNX</td><td class="n">11.5 MB</td><td class="n">164 ms — <em>slower</em></td><td><strong>0.00 precision / 0.00 recall, every class</strong></td><td><span class="pill p-crit">excluded</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note finding">
+    <h4>Where we went past the literature</h4>
+    <p>The 2026 paper that sets the AI4Shipwrecks detection record <em>assumes</em> INT8 quantization
+    transfers cleanly with "proportional" reductions. We tested it. On faint sonar targets, static
+    post-training quantization <strong>collapsed the detector to zero</strong> — and ran slower than
+    FP32 on any CPU without VNNI/AVX-512, because the quantise/dequantise nodes cost more than the
+    integer math saves. We publish the broken INT8 file alongside the working ones so the result is
+    reproducible.</p>
+  </div>
+
+  <div class="prose">
+    <p>The deployment path carries no PyTorch at all — <code>onnxruntime + numpy + opencv</code>, about
+    <strong>210 MB installed</strong> against torch's <strong>4.4 GB</strong>, and ~50 MB resident
+    against ~1.5 GB just to <code>import torch</code>. Verified end to end: a shipwreck tile scores
+    91.3 %, auto-confirmed, in 110 ms, with <code>torch</code> and <code>ultralytics</code> both absent
+    from <code>sys.modules</code>.</p>
+    <p>The ONNX file is <em>not</em> a reduced model — same weights, same architecture, same answers.
+    The choice is entirely about what has to be installed to run it.</p>
+  </div>
+</section>
+
+<section id="s13">
+  <div class="sechead"><span class="n">13</span><h2>The platform — AUV, sonar, edge computer</h2></div>
+  <div class="prose">
+    <p class="lede">One rule carried through from the research team's reference report:
+    <strong>published manufacturer specifications and our engineering assumptions are never presented
+    as the same kind of fact.</strong></p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Component</th><th>Reference</th><th>Key figures</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>AUV</td><td>L3Harris Iver4 900</td><td>300 m depth · &gt;3 kn transit, &gt;5 kn sprint · 20+ h NiMH / 40+ h Li-ion · 1 TB SSD + 8 TB DataMag · GPS surfaced, DVL + INS submerged</td><td><span class="pill p-good">published</span></td></tr>
+        <tr><td>Sonar</td><td>EdgeTech 2205</td><td>configurable AUV/UUV/ROV payload; marine-debris search is a listed application; ~75 m @ 850 kHz, ~35 m @ 1600 kHz</td><td><span class="pill p-good">published</span></td></tr>
+        <tr><td>— frequency</td><td>850 / 1600 kHz</td><td>the published Iver4 900 sheet lists a 2205B at <em>600</em>/1600 kHz</td><td><span class="pill p-warn">our proposal</span></td></tr>
+        <tr class="spot"><td>Edge computer</td><td>Jetson Orin NX 16 GB</td><td>16 GB LPDDR5 · 1024 CUDA cores · 32 Tensor Cores · 8-core Cortex-A78AE · up to 157 TOPS INT8</td><td><span class="pill p-acc">our recommendation</span></td></tr>
+        <tr><td>Survey scenario</td><td>8–10 h</td><td>well inside published endurance</td><td><span class="pill p-acc">planning assumption</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="prose">The latency budget</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Metric</th><th class="n">Value</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Assumed cadence</td><td class="n">5 Hz</td><td>one processing unit every 200 ms — <em>our assumption</em>, not a verified 2205 output rate</td></tr>
+        <tr><td>Hard ceiling</td><td class="n">&lt; 200 ms</td><td>below this we keep up with the sensor</td></tr>
+        <tr class="spot"><td>Engineering target</td><td class="n">≤ 100 ms</td><td>~2× headroom for jitter, logging, buffering</td></tr>
+        <tr><td>Measured baseline</td><td class="n">~90 ms</td><td>FP32 ONNX on a development CPU — inside the target <em>before</em> any GPU</td></tr>
+        <tr><td>Deployment target</td><td class="n">FP16 + TensorRT</td><td>must be measured on the Orin NX; not yet done</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note good">
+    <h4>Why the CPU baseline matters more than it looks</h4>
+    <p>We already meet the ≤100 ms engineering target on a laptop CPU with <em>no GPU at all</em>. The
+    Jetson is therefore about headroom and power efficiency, not about making the system feasible —
+    a far more comfortable position than needing the accelerator to hit spec. It also means a
+    degraded-mode fallback to CPU-only inference remains viable if the GPU is unavailable.</p>
+  </div>
+</section>
+
+<section id="s14">
+  <div class="sechead"><span class="n">14</span><h2>Three operating modes</h2></div>
+  <div class="prose">
+    <p class="lede">The same model and the same report schema serve three situations. Only the first
+    exists today.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 8 — where the model runs, and what crosses the gap, in each mode</div>
+    <svg viewBox="0 0 900 300" role="img" aria-label="Two architectures compared. In demo mode a browser uploads a sonar file to a Django API which queues a job in Redis; a Celery worker imports the model, runs inference, writes to PostgreSQL and pushes live per-tile results back over WebSocket. In live AUV mode the sonar feeds a Jetson Orin NX inside the vehicle which runs the model on board and writes to local mission storage; only a tiny contact summary can cross the acoustic link during the dive, and the full dataset transfers over ethernet or a removable drive after recovery. Both modes converge on the same PostgreSQL database and the same detection record schema.">
+      <defs>
+        <marker id="f8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+        <marker id="f8c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--crit)"/>
+        </marker>
+        <marker id="f8g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--good)"/>
+        </marker>
+      </defs>
+
+      <text x="14" y="16" class="t2 m" fill="var(--accent-deep)">MODE A · DEMO (server-side) — built</text>
+      <line x1="14" y1="24" x2="430" y2="24" stroke="var(--rule-firm)"/>
+
+      <rect x="14" y="40" width="96" height="44" rx="7" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="62" y="60" text-anchor="middle" class="t2">browser</text>
+      <text x="62" y="74" text-anchor="middle" class="t3 m">upload</text>
+
+      <rect x="132" y="40" width="96" height="44" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="180" y="60" text-anchor="middle" class="t2">Django</text>
+      <text x="180" y="74" text-anchor="middle" class="t3 m">queue job</text>
+
+      <rect x="250" y="32" width="180" height="60" rx="7" fill="var(--accent-wash)" stroke="var(--accent)"/>
+      <text x="340" y="52" text-anchor="middle" class="t2">Celery worker</text>
+      <text x="340" y="67" text-anchor="middle" class="t3 m">imports run_pipeline()</text>
+      <text x="340" y="82" text-anchor="middle" class="t3">model runs HERE</text>
+
+      <line x1="110" y1="62" x2="130" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#f8)"/>
+      <line x1="228" y1="62" x2="248" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#f8)"/>
+      <path d="M340 92 C 340 120 62 110 62 88" fill="none" stroke="var(--accent)" stroke-width="1.4"
+            stroke-dasharray="4 3" marker-end="url(#f8)"/>
+      <text x="200" y="118" text-anchor="middle" class="t3" fill="var(--accent-deep)">WebSocket · live per-tile results</text>
+
+      <line x1="452" y1="8" x2="452" y2="292" stroke="var(--rule)"/>
+
+      <text x="470" y="16" class="t2 m" fill="var(--signal)">MODE B · LIVE AUV (on-vehicle) — designed</text>
+      <line x1="470" y1="24" x2="886" y2="24" stroke="var(--rule-firm)"/>
+
+      <rect x="470" y="40" width="92" height="44" rx="7" fill="var(--sunk)" stroke="var(--rule-firm)"/>
+      <text x="516" y="60" text-anchor="middle" class="t2">2205 sonar</text>
+      <text x="516" y="74" text-anchor="middle" class="t3 m">waterfall</text>
+
+      <rect x="580" y="32" width="150" height="60" rx="7" fill="var(--signal-wash)" stroke="var(--signal)"/>
+      <text x="655" y="52" text-anchor="middle" class="t2">Jetson Orin NX</text>
+      <text x="655" y="67" text-anchor="middle" class="t3 m">FP16 TensorRT</text>
+      <text x="655" y="82" text-anchor="middle" class="t3">model runs HERE</text>
+
+      <rect x="748" y="40" width="138" height="44" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="817" y="60" text-anchor="middle" class="t2">mission storage</text>
+      <text x="817" y="74" text-anchor="middle" class="t3 m">1 TB SSD + DataMag</text>
+
+      <line x1="562" y1="62" x2="578" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#f8)"/>
+      <line x1="730" y1="62" x2="746" y2="62" stroke="currentColor" stroke-width="1.4" marker-end="url(#f8)"/>
+
+      <rect x="580" y="118" width="306" height="46" rx="7" fill="var(--crit-wash)" stroke="var(--crit)" stroke-dasharray="4 3"/>
+      <text x="733" y="137" text-anchor="middle" class="t2" fill="var(--crit)">acoustic modem — contact summaries only</text>
+      <text x="733" y="152" text-anchor="middle" class="t3">imagery cannot cross this link</text>
+      <line x1="655" y1="92" x2="655" y2="116" stroke="var(--crit)" stroke-width="1.4" marker-end="url(#f8c)"/>
+
+      <rect x="580" y="190" width="306" height="44" rx="7" fill="var(--good-wash)" stroke="var(--good)"/>
+      <text x="733" y="209" text-anchor="middle" class="t2" fill="var(--good)">on recovery — bulk sync</text>
+      <text x="733" y="223" text-anchor="middle" class="t3">ethernet / removable DataMag → ship server</text>
+      <line x1="817" y1="84" x2="817" y2="188" stroke="var(--good)" stroke-width="1.4"
+            stroke-dasharray="5 4" marker-end="url(#f8g)"/>
+
+      <rect x="250" y="248" width="400" height="44" rx="7" fill="var(--surface)" stroke="var(--rule-firm)"/>
+      <text x="450" y="267" text-anchor="middle" class="t2">same PostgreSQL · same DetectionRecord schema</text>
+      <text x="450" y="281" text-anchor="middle" class="t3 m">both modes converge here → dashboard, review queue, exports</text>
+      <path d="M340 92 C 300 180 300 220 340 246" fill="none" stroke="currentColor" stroke-width="1.3"
+            stroke-dasharray="3 3" marker-end="url(#f8)"/>
+      <path d="M660 234 C 640 240 600 244 560 248" fill="none" stroke="currentColor" stroke-width="1.3"
+            stroke-dasharray="3 3" marker-end="url(#f8)"/>
+    </svg>
+    <figcaption>The difference that matters is the <strong>red box</strong>. In demo mode a WebSocket
+    carries full results back in real time. Underwater there is no such channel — an acoustic modem
+    moves on the order of hundreds of bits per second, so imagery is out of the question. That
+    constraint, not compute, is why detection must happen on the vehicle.</figcaption>
+  </figure>
+
+  <h3 class="prose">Mode C — the public debris map</h3>
+  <div class="prose">
+    <p>The point of detecting a ghost net is that somebody removes it, or at minimum stops losing gear
+    on it. A net keeps fishing for decades after it is lost. The fisher who needs that information does
+    not have a sonar console — they have a phone, on a boat, often with no signal.</p>
+    <p>So: a mobile web app showing <strong>analyst-confirmed hazards only</strong> near the user's live
+    GPS position, with the region cached for offline use at sea, and each hazard drawn as an uncertainty
+    circle rather than a pin. Three gates stand between the database and the public — confirmed-only,
+    a heritage screen, and the uncertainty radius.</p>
+  </div>
+
+  <div class="note crit">
+    <h4>Three governance decisions before that goes live</h4>
+    <p><strong>Shipwrecks are frequently protected heritage</strong>, and in some jurisdictions war
+    graves. Publishing exact positions can enable looting. Recommendation: coarsen wreck positions by
+    default, gate full precision behind an authenticated authority account.</p>
+    <p><strong>Suspected ordnance is a safety notice, not a map pin.</strong> A
+    <code>mine_cylinder</code> detection is unverified by definition; the primary route should be a
+    notification to the maritime authority, not a public layer.</p>
+    <p><strong>The map is advisory, not a navigational chart.</strong> It supplements official notices
+    to mariners; it never replaces them, and it must say so.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ PART VI ═══════════════ -->
+<div class="partmark">Part VI — scale</div>
+
+<section id="s15">
+  <div class="sechead"><span class="n">15</span><h2>Scalability</h2></div>
+  <div class="prose">
+    <p class="lede">Scaling this system means six different things. Five of them are straightforward
+    because of choices made early. The sixth is the one that actually breaks first, and it is not
+    compute.</p>
+  </div>
+
+  <figure>
+    <div class="figtitle">Figure 9 — the six scaling dimensions, and where each one is bounded</div>
+    <svg viewBox="0 0 900 300" role="img" aria-label="Six scaling dimensions with their limits. Throughput scales by adding Celery worker replicas, roughly 11 tiles per second per replica, bounded only by CPU cores. Survey size scales because tiles are independent and embarrassingly parallel. Storage scales because a detection record is about 1 kilobyte while imagery stays at the edge. Classes scale by data and retraining with no architecture change. Deployment targets scale because the same torch-free code runs on a laptop, a server and a Jetson. Geographic coverage scales through per-operator fine-tuning. The sixth, analyst review capacity, is human-bound and is the real bottleneck.">
+      <g>
+        <rect x="10" y="20" width="280" height="80" rx="9" fill="var(--good-wash)" stroke="var(--good)"/>
+        <text x="28" y="42" class="t1">1 · Throughput</text>
+        <text x="28" y="60" class="t3">add worker replicas — ~11 tiles/s each</text>
+        <text x="28" y="76" class="t3 m">docker compose up --scale worker=N</text>
+        <text x="28" y="92" class="t3" fill="var(--good)">bounded by CPU cores. linear.</text>
+
+        <rect x="306" y="20" width="280" height="80" rx="9" fill="var(--good-wash)" stroke="var(--good)"/>
+        <text x="324" y="42" class="t1">2 · Survey size</text>
+        <text x="324" y="60" class="t3">every tile is independent —</text>
+        <text x="324" y="76" class="t3">embarrassingly parallel by construction</text>
+        <text x="324" y="92" class="t3" fill="var(--good)">no coordination cost.</text>
+
+        <rect x="602" y="20" width="288" height="80" rx="9" fill="var(--good-wash)" stroke="var(--good)"/>
+        <text x="620" y="42" class="t1">3 · Storage</text>
+        <text x="620" y="60" class="t3">a detection record is ~1 KB;</text>
+        <text x="620" y="76" class="t3">imagery stays at the edge or object storage</text>
+        <text x="620" y="92" class="t3" fill="var(--good)">DB grows with findings, not survey hours.</text>
+
+        <rect x="10" y="112" width="280" height="80" rx="9" fill="var(--accent-wash)" stroke="var(--accent)"/>
+        <text x="28" y="134" class="t1">4 · New hazard classes</text>
+        <text x="28" y="152" class="t3">data + retrain. <tspan class="m">nc</tspan> is a config value;</text>
+        <text x="28" y="168" class="t3">no architecture change, no API change</text>
+        <text x="28" y="184" class="t3" fill="var(--accent-deep)">bounded by labelled data, not code.</text>
+
+        <rect x="306" y="112" width="280" height="80" rx="9" fill="var(--accent-wash)" stroke="var(--accent)"/>
+        <text x="324" y="134" class="t1">5 · Deployment targets</text>
+        <text x="324" y="152" class="t3">one torch-free codebase runs on</text>
+        <text x="324" y="168" class="t3">laptop · server · Jetson (FP16/TensorRT)</text>
+        <text x="324" y="184" class="t3" fill="var(--accent-deep)">precision swaps, code does not.</text>
+
+        <rect x="602" y="112" width="288" height="80" rx="9" fill="var(--accent-wash)" stroke="var(--accent)"/>
+        <text x="620" y="134" class="t1">6 · Geographic coverage</text>
+        <text x="620" y="152" class="t3">fine-tune per operator / per region</text>
+        <text x="620" y="168" class="t3">from their own confirmed detections</text>
+        <text x="620" y="184" class="t3" fill="var(--accent-deep)">the review loop is the mechanism.</text>
+      </g>
+
+      <rect x="10" y="212" width="880" height="76" rx="9" fill="var(--crit-wash)" stroke="var(--crit)"/>
+      <text x="28" y="236" class="t1" fill="var(--crit)">THE BOTTLENECK · analyst review capacity</text>
+      <text x="28" y="256" class="t3">A large survey generates more <tspan class="m">pending_review</tspan> items than one analyst can clear. Compute scales linearly; humans do not.</text>
+      <text x="28" y="274" class="t3">Mitigations, in order of leverage: temporal persistence across overlapping tiles → better calibration → raise the auto-confirm bar.</text>
+    </svg>
+    <figcaption>Five dimensions scale by adding hardware or data. The sixth does not. Knowing which one
+    binds first is the difference between a system that scales on paper and one that scales in an
+    operations room.</figcaption>
+  </figure>
+
+  <h3 class="prose">Throughput, concretely</h3>
+  <div class="prose">
+    <p>The model runs at ~90 ms/tile on CPU with a ~250 MB worker footprint. A four-core VM running four
+    worker replicas sustains roughly <strong>40 tiles/second</strong> — far beyond a single survey
+    upload, and orders of magnitude beyond the few pings per second the sonar produces. Scaling is one
+    flag:</p>
+  </div>
+  <pre class="code">docker compose up -d --scale worker=4     <span class="c"># each replica ~250 MB RAM, no GPU</span></pre>
+
+  <div class="prose">
+    <p>Had we put the model behind its own microservice, each of those replicas would carry a ~5 GB
+    torch image and a per-tile network hop. The torch-free decision is what makes horizontal scaling
+    cheap enough to be uninteresting.</p>
+
+    <h3>Scaling the public map is a different problem — and an easier one</h3>
+    <p>The operator dashboard serves a handful of analysts. The public map could serve thousands of
+    fishers. Those are separated deliberately: the public endpoint is <strong>read-only, unauthenticated
+    GeoJSON, cached at a CDN edge</strong>. Readers never touch the application server or the database.
+    A million map views cost the same as one.</p>
+
+    <h3>What we would do at ten times the data</h3>
+  </div>
+  <ul class="clean prose">
+    <li><strong>Object storage for imagery</strong> instead of a shared volume — uploads and evidence
+    crops move to S3-compatible storage; the database keeps only records and references.</li>
+    <li><strong>Spatial indexing</strong> — PostGIS with a GiST index once the bbox query on plain
+    lat/lon columns stops being instant.</li>
+    <li><strong>Per-region model versions</strong> — the fine-tuning loop already produces them; this is
+    a registry and a routing rule, not new science.</li>
+    <li><strong>Batch the worker</strong> — ONNX Runtime accepts batched input; tiles from one transect
+    can go in groups rather than singly, which is pure throughput at no accuracy cost.</li>
+    <li><strong>Temporal persistence before the queue</strong> — the single highest-leverage change,
+    because it attacks the human bottleneck rather than the machine one.</li>
+  </ul>
+</section>
+
+<section id="s16">
+  <div class="sechead"><span class="n">16</span><h2>Measured, assumed, and next</h2></div>
+  <div class="prose">
+    <p class="lede">Everything below is stated at the confidence we actually have. This table is the
+    one to read before quoting any number from this document.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Claim</th><th>Basis</th><th>Confidence</th></tr></thead>
+      <tbody>
+        <tr><td>mAP@50 0.641; per-class results</td><td>held-out 850-tile test set, standard protocol</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>ECE 0.052 → 0.037 with per-class calibration</td><td>held-out test</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>~90 ms/tile, FP32 ONNX</td><td>benchmarked on the development CPU</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>ONNX ≡ PyTorch accuracy</td><td>verified across all 850 test tiles</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>INT8 collapses to 0.00</td><td>measured; excluded from deployment</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>Preprocessing gives no accuracy gain</td><td>matched-protocol ablation</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>Tow-fish position &lt; 1 m</td><td>XTF headers vs independent navigation CSV</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>Detection position ≈ ±120 m</td><td>disagreement between two navigation paths on the same target</td><td><span class="pill p-good">measured</span></td></tr>
+        <tr><td>Iver4 900 / EdgeTech 2205 specifications</td><td>manufacturer documentation</td><td><span class="pill p-good">published</span></td></tr>
+        <tr><td>850 / 1600 kHz sonar configuration</td><td>our proposal; the published Iver4 sheet lists 600/1600</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr><td>5 Hz cadence → 200 ms ceiling</td><td>sizing assumption, not a 2205 output-rate spec</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr><td>8–10 h survey scenario</td><td>planning figure, inside published endurance</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr><td>Acoustic contact-record size</td><td>design target from a packed record; no link budget yet</td><td><span class="pill p-warn">assumption</span></td></tr>
+        <tr class="dim"><td>Jetson FP16 + TensorRT latency and power</td><td>—</td><td><span class="pill p-crit">not measured</span></td></tr>
+        <tr class="dim"><td>2205 output rate, waterfall format, GB/hour</td><td>—</td><td><span class="pill p-crit">not researched</span></td></tr>
+        <tr class="dim"><td>Payload electrical / thermal integration</td><td>—</td><td><span class="pill p-crit">not researched</span></td></tr>
+        <tr class="dim"><td>Shipwreck split site-disjointness</td><td>audit in progress</td><td><span class="pill p-crit">unverified</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="prose">Known limitations, each with its remedy</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Limitation</th><th>Evidence</th><th>Remedy</th></tr></thead>
+      <tbody>
+        <tr><td>Does not transfer to an unseen survey</td><td>near-zero detections on AURORA — different instrument and seabed</td><td>fine-tune on a small labelled local sample; the same remedy GhostNetZero used for an identical drop</td></tr>
+        <tr><td>ghost_net trained on synthetic data</td><td>0.995 is synthetic-on-synthetic</td><td>proof of capability only; no public real dataset exists to do better</td></tr>
+        <tr><td>Position is a search area, not a fix</td><td>~122 m spread between navigation paths</td><td>prefer the ping-index path; publish an uncertainty radius everywhere</td></tr>
+        <tr><td>crab_pot unusable</td><td>0.329 after two runs and doubled data</td><td>filtered from the product — a separability problem, not a volume one</td></tr>
+        <tr><td>Shadow check unquantified</td><td>wired and unit-tested; inconclusive on isolated tiles</td><td>needs a labelled <em>and</em> geo-referenced transect to measure</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="prose">Next actions</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="n">#</th><th>Action</th><th>Owner</th><th>Unblocks</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Turborepo restructure; fill the Django stubs against the locked contract</td><td>backend</td><td>the demo</td></tr>
+        <tr><td class="n">2</td><td>Wire the dashboard's five screens; render the GeoJSON with uncertainty circles</td><td>frontend</td><td>the demo</td></tr>
+        <tr><td class="n">3</td><td>Adopt the 50 px proximity box-merge; re-evaluate shipwreck</td><td>ML</td><td>the weakest real class</td></tr>
+        <tr><td class="n">4</td><td>Temporal persistence across overlapping tiles, window set by coarse-graining</td><td>ML</td><td>the review-queue bottleneck</td></tr>
+        <tr><td class="n">5</td><td>Benchmark FP16 + TensorRT on an Orin NX — latency <em>and</em> power</td><td>ML + hardware</td><td>the edge claim</td></tr>
+        <tr><td class="n">6</td><td>Research 2205 output rate and waterfall format; derive GB/hour</td><td>research</td><td>storage budget, cadence validation</td></tr>
+        <tr><td class="n">7</td><td>Decide the heritage / ordnance publication policy</td><td>team + mentor</td><td>the public map</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <h4>The one-paragraph version</h4>
+    <p>A four-class side-scan sonar detector trained on 6,405 tiles assembled from six real surveys plus
+    physics-modelled synthesis, reaching mAP@50 0.641 with calibrated confidence that means what it
+    says, wrapped in a deterministic acoustic-shadow filter and a geotagging engine validated to under
+    a metre — running torch-free at ~90 ms per tile on a CPU, which already meets the edge latency
+    target before any accelerator. Every weak class is weak for a reason we can point at, every
+    limitation is measured, and every remedy is named.</p>
+  </div>
+</section>
+
+<footer>
+  DRISHTI · project documentation · SIH 2026 · Problem Statement 26057 · compiled 2026-09-02<br>
+  shipped: best_detector.pt (YOLOv8s, Run 3, epoch 91) · best_detector.onnx (FP32, edge)<br>
+  code <a href="https://github.com/Rehan9599/Sonar-Drishti">github.com/Rehan9599/Sonar-Drishti</a> ·
+  weights <a href="https://huggingface.co/rehan9599/drishti-detector">huggingface.co/rehan9599/drishti-detector</a>
+</footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reading the Training Log</title>
+<meta name="description" content="Every number and term in the DRISHTI detector training output, defined in plain language, with flow diagrams of the training loop, the model, and how the metrics are computed.">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f3f6f7; --surface:#fcfdfd; --surface-2:#eaeef0;
+    --ink:#0f1519; --ink-2:#48535a; --muted:#7b868c;
+    --rule:#dbe2e5; --rule-strong:#c3ccd0;
+    --accent:#0e7c8b; --accent-soft:#e2f0f2;
+    --good:#0a7d1f; --good-soft:#e3f2e6;
+    --warn:#9a6400;
+    --crit:#c22f2f; --crit-soft:#f7e3e3;
+    --shadow:0 1px 2px rgba(15,25,30,.06),0 8px 24px -12px rgba(15,25,30,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#090e11; --surface:#11181c; --surface-2:#1a242a;
+      --ink:#eef3f5; --ink-2:#a9b5bb; --muted:#79848a;
+      --rule:#252f36; --rule-strong:#33404a;
+      --accent:#3fb6c6; --accent-soft:#123037;
+      --good:#3fbf57; --good-soft:#12331a;
+      --warn:#e0a01e;
+      --crit:#e35b5b; --crit-soft:#361a1a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#090e11; --surface:#11181c; --surface-2:#1a242a;
+    --ink:#eef3f5; --ink-2:#a9b5bb; --muted:#79848a;
+    --rule:#252f36; --rule-strong:#33404a;
+    --accent:#3fb6c6; --accent-soft:#123037;
+    --good:#3fbf57; --good-soft:#12331a;
+    --warn:#e0a01e;
+    --crit:#e35b5b; --crit-soft:#361a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--page);color:var(--ink);
+    font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+    font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  header.mast{max-width:1000px;margin:0 auto;padding:56px 24px 26px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 18px;display:flex;align-items:center;gap:12px}
+  .kicker::after{content:"";height:1px;flex:1;background:var(--rule)}
+  h1{font-size:clamp(2rem,5vw,2.9rem);line-height:1.07;letter-spacing:-.02em;font-weight:600;margin:0 0 16px;text-wrap:balance}
+  .standfirst{font-size:1.16rem;color:var(--ink-2);margin:0;max-width:62ch;text-wrap:pretty}
+  section{max-width:1000px;margin:0 auto;padding:30px 24px 0}
+  .col{max-width:768px}
+  h2{font-size:1.02rem;font-weight:600;letter-spacing:.02em;margin:46px 0 6px;padding-top:22px;border-top:1px solid var(--rule-strong);display:flex;align-items:baseline;gap:12px}
+  h2 .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+  h3{font-size:1.02rem;font-weight:600;margin:26px 0 4px}
+  p{margin:12px 0;max-width:72ch}
+  strong{font-weight:600}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+  .logbox{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px 18px;margin:20px 0;overflow-x:auto;box-shadow:var(--shadow)}
+  .logbox pre{margin:0;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.8;color:var(--ink-2);white-space:pre}
+  .logbox .hl{color:var(--accent);font-weight:600}
+
+  dl.defs{margin:18px 0;display:grid;grid-template-columns:max-content 1fr;gap:0}
+  dl.defs>div{display:contents}
+  dl.defs dt{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);padding:11px 20px 11px 0;border-top:1px solid var(--rule);white-space:nowrap}
+  dl.defs dd{margin:0;padding:11px 0;border-top:1px solid var(--rule);font-size:14.5px;color:var(--ink-2)}
+  dl.defs dd b{color:var(--ink);font-weight:600}
+  @media(max-width:640px){
+    dl.defs{grid-template-columns:1fr}
+    dl.defs dt{border-top:1px solid var(--rule);padding-bottom:2px}
+    dl.defs dd{border-top:0;padding-top:4px}
+  }
+
+  figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 20px 14px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:13px;color:var(--muted);margin-top:12px;max-width:70ch}
+  .fig-title{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+  svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  svg .lbl{font-size:12.5px;fill:var(--ink)}
+  svg .sub{font-size:11px;fill:var(--muted)}
+  svg .edge{font-size:11px;fill:var(--ink-2)}
+  .box{fill:var(--surface-2);stroke:var(--rule-strong)}
+  .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+
+  .tbl-scroll{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  tbody tr:last-child td{border-bottom:0}
+  td:first-child{font-family:"IBM Plex Mono",monospace;font-weight:600;white-space:nowrap;color:var(--ink)}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+  .note h3{margin:0 0 6px}
+  footer{max-width:1000px;margin:44px auto 0;padding:22px 24px;border-top:1px solid var(--rule-strong);color:var(--muted);font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+</head>
+<body>
+<header class="mast">
+  <p class="kicker">DRISHTI &nbsp;/&nbsp; ML reference</p>
+  <h1>Reading the training log</h1>
+  <p class="standfirst">Every number and word that scrolls past while the detector trains, defined in plain
+  language &mdash; plus flow diagrams of the training loop, the model itself, and how the accuracy scores
+  are actually computed.</p>
+</header>
+
+<section>
+  <h2 class="col"><span class="n">01</span> The two lines that repeat every epoch</h2>
+  <p class="col">During training, YOLO prints one <strong>progress line</strong> while it learns from the training
+  set, then one <strong>validation line</strong> after it checks itself on the held-out val set. This is the
+  real output from Run&nbsp;2, epoch 8:</p>
+
+  <div class="logbox">
+<pre>     <span class="hl">Epoch</span>   <span class="hl">GPU_mem</span>   <span class="hl">box_loss</span>   <span class="hl">cls_loss</span>   <span class="hl">dfl_loss</span>  <span class="hl">Instances</span>   <span class="hl">Size</span>
+     8/120     3.48G      1.511       8.58      1.573         11        640: 100% <span class="hl">330/330</span>  <span class="hl">4.1it/s</span>  <span class="hl">1:20</span>
+               <span class="hl">Class</span>   <span class="hl">Images</span>  <span class="hl">Instances</span>    <span class="hl">Box(P</span>       <span class="hl">R</span>     <span class="hl">mAP50</span>   <span class="hl">mAP50-95</span>)
+                 all       712       1018     0.589     0.532     0.534      0.294</pre>
+  </div>
+
+  <h3 class="col">Progress line &mdash; how the learning is going</h3>
+  <dl class="defs col">
+    <div><dt>Epoch&nbsp;8/120</dt><dd><b>Epoch</b> = one complete pass over every training image. We plan up to 120; training can stop earlier (see <code>patience</code>).</dd></div>
+    <div><dt>GPU_mem&nbsp;3.48G</dt><dd>Video memory the run is using on the RTX&nbsp;4050. The card has ~6&nbsp;GB, so 3.48&nbsp;GB leaves comfortable headroom &mdash; batch size could go higher.</dd></div>
+    <div><dt>box_loss&nbsp;1.511</dt><dd>How wrong the predicted <b>box positions and sizes</b> are, averaged over the epoch. Lower = tighter boxes. Trends down as training proceeds.</dd></div>
+    <div><dt>cls_loss&nbsp;8.58</dt><dd>How wrong the predicted <b>class labels</b> are. Still high at epoch 8 &mdash; it should fall below ~2 within the first 30&ndash;40 epochs. If it stays high, the classifier is still confusing classes (crab-pot is the usual culprit).</dd></div>
+    <div><dt>dfl_loss&nbsp;1.573</dt><dd><b>Distribution Focal Loss</b> &mdash; how <b>fuzzy the box edges</b> are. YOLOv8 predicts each edge as a probability spread over positions; this loss sharpens that spread to a confident single location.</dd></div>
+    <div><dt>Instances&nbsp;11</dt><dd>Number of labelled objects in the <b>last batch shown</b> (not the whole epoch). Just a sanity readout &mdash; varies batch to batch.</dd></div>
+    <div><dt>Size&nbsp;640</dt><dd>Every image is resized to <b>640&times;640 pixels</b> before it enters the model.</dd></div>
+    <div><dt>330/330</dt><dd><b>Batches (iterations) per epoch</b> = training images &divide; batch size &asymp; 4,900 &divide; 16. The bar fills as batches complete.</dd></div>
+    <div><dt>4.1it/s</dt><dd><b>Iterations per second</b> &mdash; 4.1 batches (65 images) processed every second on the GPU.</dd></div>
+    <div><dt>1:20</dt><dd>Wall-clock time this epoch took (1&nbsp;min 20&nbsp;s). &times;120 &asymp; the full run.</dd></div>
+  </dl>
+
+  <h3 class="col">Validation line &mdash; how good it actually is</h3>
+  <p class="col">Run on the val set with <strong>no learning</strong>. One row per class; <code>all</code> is the
+  average across classes.</p>
+  <dl class="defs col">
+    <div><dt>Images&nbsp;712</dt><dd>Val images checked this epoch.</dd></div>
+    <div><dt>Instances&nbsp;1018</dt><dd>Total labelled objects across those images.</dd></div>
+    <div><dt>Box(P&nbsp;0.589</dt><dd><b>Precision</b> &mdash; of the boxes the model drew, 59% were real objects; 41% were false alarms.</dd></div>
+    <div><dt>R&nbsp;0.532</dt><dd><b>Recall</b> &mdash; of the objects that were really there, the model found 53%; it missed 47%.</dd></div>
+    <div><dt>mAP50&nbsp;0.534</dt><dd><b>Mean Average Precision at IoU&nbsp;0.50</b> &mdash; the headline accuracy score (0&ndash;1). Rewards finding objects <em>and</em> boxing them with at least 50% overlap. Averaged over all classes.</dd></div>
+    <div><dt>mAP50-95&nbsp;0.294</dt><dd>The same score averaged over ten stricter overlap thresholds (0.50, 0.55, &hellip; 0.95). Much harder &mdash; it measures how <b>precisely</b> the boxes fit, not just whether the object was found.</dd></div>
+  </dl>
+  <div class="note col">
+    <h3>Is epoch 8 on track?</h3>
+    <p style="margin:6px 0">Yes. Run&nbsp;1 hit mAP50 0.58 around epoch 10; Run&nbsp;2 is at 0.53 at epoch 8 with
+    a harder, crab-pot-heavier dataset &mdash; same trajectory. Watch two things in <code>results.png</code>
+    afterward: <code>cls_loss</code> should keep falling steeply, and val <code>mAP50</code> should push past
+    0.60 and then flatten. If mAP50 flattens below ~0.55, the data mix is the ceiling, not the training time.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">02</span> Epoch, batch, iteration &mdash; the nesting</h2>
+  <figure>
+    <div class="fig-title">One run &rarr; epochs &rarr; batches &rarr; images</div>
+    <svg viewBox="0 0 900 210" role="img" aria-label="Nested boxes: a training run contains 120 epochs; one epoch is a full pass over about 4900 images; one epoch is 330 batches; one batch is 16 images and produces one weight update.">
+      <rect x="8" y="10" width="884" height="190" rx="10" class="box"/>
+      <text x="24" y="32" class="lbl" font-weight="600">Training run</text>
+      <text x="24" y="49" class="sub m">up to 120 epochs &middot; ~2.5 h &middot; stops at 120 or when val stops improving for 25</text>
+
+      <rect x="24" y="62" width="852" height="128" rx="8" class="box"/>
+      <text x="40" y="84" class="lbl" font-weight="600">1 epoch</text>
+      <text x="40" y="101" class="sub m">one full pass over all ~4,900 training images &middot; then a validation pass</text>
+
+      <rect x="40" y="114" width="560" height="68" rx="6" class="box"/>
+      <text x="56" y="135" class="lbl">330 batches, run one after another</text>
+      <text x="56" y="152" class="sub m">each batch = 16 images &rarr; 1 forward pass &rarr; 1 loss &rarr; 1 weight update</text>
+      <path d="M56 168 H584" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+      <text x="56" y="178" class="sub">iteration 1 &rarr; 2 &rarr; 3 &rarr; &hellip; &rarr; 330</text>
+
+      <rect x="620" y="114" width="240" height="68" rx="6" class="box-a"/>
+      <text x="636" y="135" class="lbl">then: validation</text>
+      <text x="636" y="152" class="sub m">predict on 712 val images,</text>
+      <text x="636" y="167" class="sub m">score mAP, save best.pt</text>
+    </svg>
+    <figcaption>"Iteration" and "batch" are the same thing here: one group of 16 images that produces one
+    adjustment to the model's weights. 330 of them make an epoch.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">03</span> The training loop</h2>
+  <p class="col">What actually happens 330 times per epoch, then once more per epoch for validation.</p>
+  <figure>
+    <div class="fig-title">One weight update, and the epoch cycle around it</div>
+    <svg viewBox="0 0 900 430" role="img" aria-label="Flow: a batch of 16 images and labels goes into the model for a forward pass producing predictions; predictions and labels are compared to give box, class and DFL losses which sum to a total loss; a backward pass computes gradients; the optimizer updates the weights; this repeats 330 times for one epoch; then a validation pass scores mAP with no learning and saves the best checkpoint; then the next epoch begins, until epoch 120 or early stop.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- per-batch row -->
+      <text x="24" y="28" class="sub" font-weight="600" letter-spacing=".08em">PER BATCH &nbsp;&times;330</text>
+
+      <rect x="16" y="40" width="150" height="60" rx="7" class="box"/>
+      <text x="91" y="66" text-anchor="middle" class="lbl">batch</text>
+      <text x="91" y="83" text-anchor="middle" class="sub m">16 images + labels</text>
+
+      <line x1="166" y1="70" x2="210" y2="70" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="212" y="40" width="164" height="60" rx="7" class="box-a"/>
+      <text x="294" y="66" text-anchor="middle" class="lbl">forward pass</text>
+      <text x="294" y="83" text-anchor="middle" class="sub m">model predicts boxes + classes</text>
+
+      <line x1="376" y1="70" x2="420" y2="70" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="398" y="62" text-anchor="middle" class="edge">vs labels</text>
+
+      <rect x="422" y="30" width="200" height="80" rx="7" class="box"/>
+      <text x="522" y="52" text-anchor="middle" class="lbl">compute loss</text>
+      <text x="522" y="70" text-anchor="middle" class="sub m">box_loss + cls_loss</text>
+      <text x="522" y="84" text-anchor="middle" class="sub m">+ dfl_loss</text>
+      <text x="522" y="101" text-anchor="middle" class="sub m">= total loss (one number)</text>
+
+      <line x1="622" y1="70" x2="666" y2="70" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="668" y="40" width="150" height="60" rx="7" class="box"/>
+      <text x="743" y="63" text-anchor="middle" class="lbl">backward pass</text>
+      <text x="743" y="80" text-anchor="middle" class="sub m">gradients</text>
+
+      <line x1="743" y1="100" x2="743" y2="140" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="753" y="124" class="edge">which way to nudge</text>
+
+      <rect x="668" y="142" width="150" height="58" rx="7" class="box"/>
+      <text x="743" y="165" text-anchor="middle" class="lbl">optimizer step</text>
+      <text x="743" y="182" text-anchor="middle" class="sub m">update weights (AdamW)</text>
+
+      <!-- return arrow to batch -->
+      <path d="M668 171 H100 V102" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="360" y="188" class="edge">next batch &mdash; repeat 330&times; = one epoch</text>
+
+      <!-- divider -->
+      <line x1="16" y1="232" x2="884" y2="232" stroke="var(--rule-strong)" stroke-width="1"/>
+      <text x="24" y="258" class="sub" font-weight="600" letter-spacing=".08em">PER EPOCH</text>
+
+      <rect x="16" y="272" width="180" height="66" rx="7" class="box"/>
+      <text x="106" y="298" text-anchor="middle" class="lbl">end of epoch</text>
+      <text x="106" y="315" text-anchor="middle" class="sub m">all 330 batches done</text>
+
+      <line x1="196" y1="305" x2="244" y2="305" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="246" y="272" width="210" height="66" rx="7" class="box-a"/>
+      <text x="351" y="294" text-anchor="middle" class="lbl">validation pass</text>
+      <text x="351" y="311" text-anchor="middle" class="sub m">predict on val set &mdash; NO learning</text>
+      <text x="351" y="326" text-anchor="middle" class="sub m">measure P, R, mAP50, mAP50-95</text>
+
+      <line x1="456" y1="305" x2="504" y2="305" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="506" y="272" width="200" height="66" rx="7" class="box"/>
+      <text x="606" y="294" text-anchor="middle" class="lbl">checkpoint</text>
+      <text x="606" y="311" text-anchor="middle" class="sub m">save last.pt always;</text>
+      <text x="606" y="326" text-anchor="middle" class="sub m">best.pt if val mAP improved</text>
+
+      <line x1="706" y1="305" x2="754" y2="305" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="756" y="272" width="128" height="66" rx="7" class="box"/>
+      <text x="820" y="298" text-anchor="middle" class="lbl">next epoch</text>
+      <text x="820" y="315" text-anchor="middle" class="sub m">or stop</text>
+
+      <path d="M820 338 V370 H106 V344" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="380" y="386" class="edge">until epoch 120, or 25 epochs with no val improvement (early stop)</text>
+    </svg>
+    <figcaption>The model only changes during the backward pass + optimizer step. Validation just measures &mdash;
+    it never touches the weights, which is what makes it an honest check.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">04</span> The three losses &mdash; what each one grades</h2>
+  <p class="col">A "loss" is a single number saying how wrong a prediction is; training = making it smaller.
+  YOLOv8 grades three separate things and adds them up.</p>
+  <figure>
+    <div class="fig-title">One predicted object, graded three ways</div>
+    <svg viewBox="0 0 900 300" role="img" aria-label="A sonar tile with a green dashed ground-truth box and a blue solid predicted box that is offset and slightly smaller. Three labelled grades: box_loss measures the position and size gap, cls_loss measures whether the class label is right, dfl_loss measures how sharp the box edges are.">
+      <!-- tile -->
+      <rect x="16" y="20" width="240" height="240" rx="6" class="box"/>
+      <text x="136" y="278" text-anchor="middle" class="sub">one 640&times;640 tile</text>
+      <!-- ground truth box -->
+      <rect x="70" y="80" width="120" height="120" fill="none" stroke="var(--good)" stroke-width="2.5" stroke-dasharray="6 4"/>
+      <text x="70" y="74" class="sub" fill="var(--good)">ground truth (label)</text>
+      <!-- predicted box -->
+      <rect x="96" y="104" width="104" height="100" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+      <text x="132" y="222" class="sub" fill="var(--accent)">prediction</text>
+
+      <!-- grades -->
+      <g>
+        <rect x="300" y="26" width="584" height="72" rx="8" class="box"/>
+        <text x="318" y="50" class="lbl m" font-weight="600">box_loss</text>
+        <text x="318" y="70" class="sub">Is the box in the right <b>place</b> and the right <b>size</b>? Measures the gap in centre, width and</text>
+        <text x="318" y="86" class="sub">height between the blue and green boxes (metric: CIoU). Big offset &rarr; big box_loss.</text>
+
+        <rect x="300" y="112" width="584" height="72" rx="8" class="box"/>
+        <text x="318" y="136" class="lbl m" font-weight="600">cls_loss</text>
+        <text x="318" y="156" class="sub">Is it the right <b>label</b>? The model outputs a score per class ("shipwreck 0.6, crab_pot 0.3,</text>
+        <text x="318" y="172" class="sub">&hellip;"); this penalises score on wrong classes and missing score on the true one (metric: BCE).</text>
+
+        <rect x="300" y="198" width="584" height="72" rx="8" class="box"/>
+        <text x="318" y="222" class="lbl m" font-weight="600">dfl_loss</text>
+        <text x="318" y="242" class="sub">Are the four <b>edges sharp</b>? Each edge is predicted as a probability spread over nearby</text>
+        <text x="318" y="258" class="sub">positions; this pushes that spread to one confident location (Distribution Focal Loss).</text>
+      </g>
+    </svg>
+    <figcaption>total loss = box_loss + cls_loss + dfl_loss, each with a fixed weight. The optimizer only ever
+    sees this one summed number and moves every weight to shrink it.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">05</span> How one image becomes detections</h2>
+  <figure>
+    <div class="fig-title">Inside the model, left to right</div>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Pipeline: a 640 by 640 image enters the backbone which extracts visual features at three scales; the neck merges the scales; the head predicts a box and class scores at every grid cell across three scales, producing thousands of raw candidates; a confidence threshold drops weak ones; non-max suppression removes overlapping duplicates; the result is the final list of detections.">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <rect x="12" y="70" width="110" height="90" rx="7" class="box"/>
+      <text x="67" y="108" text-anchor="middle" class="lbl">image</text>
+      <text x="67" y="125" text-anchor="middle" class="sub m">640&times;640 grey</text>
+
+      <line x1="122" y1="115" x2="158" y2="115" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+      <rect x="160" y="60" width="150" height="110" rx="7" class="box"/>
+      <text x="235" y="98" text-anchor="middle" class="lbl">backbone</text>
+      <text x="235" y="116" text-anchor="middle" class="sub m">stacked conv layers</text>
+      <text x="235" y="132" text-anchor="middle" class="sub m">find edges &rarr; shapes</text>
+      <text x="235" y="148" text-anchor="middle" class="sub m">&rarr; objects, at 3 sizes</text>
+
+      <line x1="310" y1="115" x2="346" y2="115" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+      <rect x="348" y="60" width="150" height="110" rx="7" class="box"/>
+      <text x="423" y="98" text-anchor="middle" class="lbl">neck</text>
+      <text x="423" y="116" text-anchor="middle" class="sub m">merge the 3 scales</text>
+      <text x="423" y="132" text-anchor="middle" class="sub m">so small + large</text>
+      <text x="423" y="148" text-anchor="middle" class="sub m">objects both survive</text>
+
+      <line x1="498" y1="115" x2="534" y2="115" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+      <rect x="536" y="60" width="160" height="110" rx="7" class="box-a"/>
+      <text x="616" y="94" text-anchor="middle" class="lbl">head</text>
+      <text x="616" y="112" text-anchor="middle" class="sub m">at every grid cell:</text>
+      <text x="616" y="128" text-anchor="middle" class="sub m">predict 1 box + 5</text>
+      <text x="616" y="144" text-anchor="middle" class="sub m">class scores (no anchors)</text>
+
+      <line x1="696" y1="115" x2="732" y2="115" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar2)"/>
+      <text x="714" y="107" text-anchor="middle" class="edge">~8,400 raw</text>
+
+      <rect x="734" y="70" width="154" height="90" rx="7" class="box"/>
+      <text x="811" y="100" text-anchor="middle" class="lbl">filter + NMS</text>
+      <text x="811" y="118" text-anchor="middle" class="sub m">drop score &lt; 0.25;</text>
+      <text x="811" y="134" text-anchor="middle" class="sub m">merge overlapping</text>
+      <text x="811" y="150" text-anchor="middle" class="sub m">duplicates</text>
+
+      <text x="811" y="192" text-anchor="middle" class="edge">&darr;  final detections: a few boxes, each with a class + score</text>
+    </svg>
+    <figcaption>"Anchor-free" means the head predicts box corners directly instead of adjusting pre-set box
+    templates &mdash; simpler, and part of why YOLOv8 exports cleanly to ONNX for edge devices. NMS =
+    Non-Maximum Suppression.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">06</span> How the accuracy scores are computed</h2>
+  <p class="col">Every number on the validation line comes from comparing predicted boxes to ground-truth boxes.
+  Two steps: decide which predictions "count as a hit", then turn the hit/miss tally into a score.</p>
+
+  <figure>
+    <div class="fig-title">Step 1 &mdash; IoU decides what counts as a hit</div>
+    <svg viewBox="0 0 900 180" role="img" aria-label="Two overlapping rectangles; IoU equals the area they share divided by the total area they cover together. If IoU is at least 0.5 the prediction is a true positive; a prediction matching no ground-truth box is a false positive; a ground-truth box with no matching prediction is a false negative.">
+      <rect x="40" y="30" width="120" height="100" fill="none" stroke="var(--good)" stroke-width="2.5" stroke-dasharray="6 4"/>
+      <rect x="100" y="60" width="120" height="100" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+      <rect x="100" y="60" width="60" height="70" fill="var(--accent)" opacity="0.16"/>
+      <text x="46" y="24" class="sub" fill="var(--good)">ground truth</text>
+      <text x="150" y="174" class="sub" fill="var(--accent)">prediction</text>
+      <text x="130" y="100" text-anchor="middle" class="sub">overlap</text>
+
+      <text x="290" y="52" class="lbl">IoU = shared area &divide; combined area &nbsp; (0 to 1)</text>
+      <text x="290" y="82" class="sub">IoU &ge; 0.50 &rarr; the prediction is a <b>true positive (TP)</b> &mdash; a real hit</text>
+      <text x="290" y="106" class="sub">prediction that matches no ground-truth box &rarr; <b>false positive (FP)</b> &mdash; a false alarm</text>
+      <text x="290" y="130" class="sub">ground-truth box with no matching prediction &rarr; <b>false negative (FN)</b> &mdash; a miss</text>
+      <text x="290" y="158" class="sub m">"mAP50" uses the 0.50 cutoff; "mAP50-95" repeats this at 0.50, 0.55 &hellip; 0.95 and averages.</text>
+    </svg>
+    <figcaption>IoU (Intersection over Union) is just how much two boxes overlap. A loose box over the right
+    object can still fail the 0.50 test &mdash; that is why mAP50-95 is always lower.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="fig-title">Step 2 &mdash; tally &rarr; precision, recall &rarr; AP &rarr; mAP</div>
+    <svg viewBox="0 0 900 240" role="img" aria-label="From the TP, FP and FN counts: precision equals TP over TP plus FP; recall equals TP over TP plus FN. Sweeping the confidence threshold traces a precision-recall curve; the area under that curve is the Average Precision for one class; averaging AP over all five classes gives mAP50; repeating across IoU thresholds and averaging gives mAP50-95.">
+      <defs>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <rect x="14" y="30" width="196" height="86" rx="7" class="box"/>
+      <text x="30" y="54" class="lbl">counts</text>
+      <text x="30" y="74" class="sub m">TP = hits</text>
+      <text x="30" y="90" class="sub m">FP = false alarms</text>
+      <text x="30" y="106" class="sub m">FN = misses</text>
+
+      <line x1="210" y1="73" x2="250" y2="73" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+      <rect x="252" y="24" width="232" height="98" rx="7" class="box"/>
+      <text x="268" y="48" class="lbl">two ratios</text>
+      <text x="268" y="70" class="sub m">precision = TP / (TP + FP)</text>
+      <text x="268" y="86" class="sub">&nbsp;&nbsp;"when it fires, how often right"</text>
+      <text x="268" y="104" class="sub m">recall = TP / (TP + FN)</text>
+      <text x="268" y="120" class="sub">&nbsp;&nbsp;"of real objects, how many found"</text>
+
+      <line x1="484" y1="73" x2="524" y2="73" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+      <text x="504" y="65" text-anchor="middle" class="edge">sweep</text>
+      <text x="504" y="90" text-anchor="middle" class="sub">conf</text>
+
+      <rect x="526" y="24" width="180" height="98" rx="7" class="box-a"/>
+      <text x="616" y="44" text-anchor="middle" class="lbl">P&ndash;R curve</text>
+      <path d="M548 108 C592 106 632 100 648 76 C660 58 664 44 690 40" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="616" y="118" text-anchor="middle" class="sub m">area = AP (one class)</text>
+
+      <line x1="706" y1="73" x2="746" y2="73" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+      <rect x="748" y="24" width="140" height="98" rx="7" class="box"/>
+      <text x="818" y="48" text-anchor="middle" class="lbl">mAP50</text>
+      <text x="818" y="70" text-anchor="middle" class="sub m">mean of AP</text>
+      <text x="818" y="86" text-anchor="middle" class="sub m">over 5 classes</text>
+
+      <path d="M818 122 V150 H520 V150" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar3)"/>
+      <rect x="300" y="150" width="430" height="66" rx="7" class="box"/>
+      <text x="316" y="174" class="lbl">mAP50-95</text>
+      <text x="316" y="196" class="sub">redo the whole thing at IoU 0.50, 0.55, &hellip; 0.95 &mdash; average the ten mAPs.</text>
+      <text x="316" y="210" class="sub m">This is the strict "how well do the boxes actually fit" score.</text>
+    </svg>
+    <figcaption>"AP" = one class. "mAP" = the <b>m</b>ean across our five classes. The "50" or "50-95" says
+    which overlap strictness. Everything on the validation line is one of these.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">07</span> Everything else you'll see in our training</h2>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Term</th><th>What it means for us</th></tr></thead>
+      <tbody>
+        <tr><td>transfer learning / fine-tuning</td><td>We don't start from zero. We load <code>yolov8s.pt</code>, already trained on millions of everyday photos (COCO), and re-train it on sonar. The early layers ("find edges and blobs") are already useful; we mostly re-teach the later layers.</td></tr>
+        <tr><td>backbone / neck / head</td><td>The three parts of the model. Backbone = extract features. Neck = combine features at different sizes. Head = output the actual boxes and class scores.</td></tr>
+        <tr><td>parameters (11.1M)</td><td>The individual numbers inside the model that get adjusted during training. "11.1M params" = a small model, deliberately &mdash; it has to fit 6&nbsp;GB VRAM and run fast on edge hardware.</td></tr>
+        <tr><td>GFLOPs (28.4)</td><td>Billions of math operations to run the model on one image. Lower = faster. 28 is light &mdash; hence 3.9&nbsp;ms per frame.</td></tr>
+        <tr><td>layers (73, "fused")</td><td>Depth of the network after an inference-time optimisation that merges adjacent operations. Cosmetic readout.</td></tr>
+        <tr><td>batch size (16)</td><td>Images processed together before one weight update. Bigger = smoother, steadier learning but more VRAM.</td></tr>
+        <tr><td>learning rate (lr0 0.001)</td><td>How big a step the optimizer takes each update. Too big = unstable; too small = slow. We warm it up for 3 epochs, then decay it toward zero (cosine schedule) so late training makes fine adjustments.</td></tr>
+        <tr><td>optimizer (AdamW)</td><td>The rule that turns gradients into weight changes. AdamW adapts the step size per-weight and is a safe default for fine-tuning on a few thousand images.</td></tr>
+        <tr><td>momentum / weight decay</td><td>Optimizer knobs. Momentum = keep rolling in a consistent direction (smooths noise). Weight decay = gently pull weights toward zero (discourages memorising).</td></tr>
+        <tr><td>gradient</td><td>For each weight, the direction and amount to change it to reduce the loss. Produced by the backward pass.</td></tr>
+        <tr><td>AMP / mixed precision</td><td>Doing most math in 16-bit instead of 32-bit. Roughly halves VRAM and speeds training with negligible accuracy cost. On by default.</td></tr>
+        <tr><td>overfitting</td><td>Model memorises the training images instead of learning general patterns &mdash; train score keeps rising while val score stalls or drops. Run&nbsp;1 did <em>not</em> overfit.</td></tr>
+        <tr><td>early stopping / patience (25)</td><td>If val mAP50 doesn't improve for 25 straight epochs, stop &mdash; further training is just wasting time or starting to overfit.</td></tr>
+        <tr><td>augmentation</td><td>Randomly altering training images each epoch so the model sees more variety: <code>mosaic</code> (stitch 4 images), <code>mixup</code> (blend 2), brightness jitter, rotation, horizontal flip, <code>erasing</code> (blank a patch &mdash; mimics sonar dropouts). <code>close_mosaic 15</code> = turn mosaic off for the last 15 epochs so it finishes on clean images.</td></tr>
+        <tr><td>class weight / cls gain (1.66)</td><td>We auto-raise the penalty for misclassifying rare classes (shipwreck, cylinder) so they aren't ignored in favour of the common one.</td></tr>
+        <tr><td>ground truth / labels / annotations</td><td>The human- (or, for ghost-net, procedurally-) drawn boxes we treat as correct. Everything is scored against these.</td></tr>
+        <tr><td>confidence score</td><td>The model's raw 0&ndash;1 certainty on a detection. Module 2 later re-calibrates this into an honest probability.</td></tr>
+        <tr><td>conf threshold (0.25)</td><td>Minimum confidence to keep a detection. Lower &rarr; more found (higher recall) but more false alarms (lower precision).</td></tr>
+        <tr><td>NMS + IoU threshold (0.7)</td><td>Non-Max Suppression removes duplicate boxes on one object: if two boxes overlap more than 0.7 IoU, keep only the higher-scoring one.</td></tr>
+        <tr><td>train / val / test</td><td>Train = the model learns from these. Val = checked every epoch to steer training and pick <code>best.pt</code> (model sees the scores, indirectly). Test = touched once at the end for the honest number.</td></tr>
+        <tr><td>checkpoint (best.pt / last.pt)</td><td>Saved model files. <code>last.pt</code> = the most recent epoch. <code>best.pt</code> = the epoch with the highest val mAP50 &mdash; this is the one we ship.</td></tr>
+        <tr><td>convergence / plateau</td><td>When the loss and val mAP stop meaningfully changing epoch to epoch &mdash; the model has learned what this data can teach it.</td></tr>
+        <tr><td>confusion matrix</td><td>A grid of true class vs predicted class. The diagonal = correct; off-diagonal = which classes get mistaken for which (or for "background").</td></tr>
+        <tr><td>inference speed (3.9&nbsp;ms / ~250&nbsp;FPS)</td><td>Time to run the trained model on one image. Matters for the edge / AUV deployment claim.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  DRISHTI &middot; ML reference &middot; companion to run1_detector_report &middot; terms as used by Ultralytics YOLOv8 &middot; 2026-08-31
+</footer>
+</body>
+</html>

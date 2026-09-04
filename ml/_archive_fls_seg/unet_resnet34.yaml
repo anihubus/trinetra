@@ -1,0 +1,32 @@
+# ---- DRISHTI: U-Net + ResNet34 reference configuration ----
+# Reference architecture from Singh & Valdenegro-Toro, ICCVW 2021 (0.7481 mIoU).
+# This is a fallback/comparison model, not the primary pipeline.
+
+model:
+  architecture: Unet
+  encoder_name: resnet34
+  encoder_weights: imagenet          # or path to agrija9/ssl-sonar-images checkpoint
+  in_channels: 1                     # grayscale sonar
+  classes: 12                        # same class set as YOLO config
+
+training:
+  epochs: 80
+  batch_size: 16
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: CosineAnnealingLR
+  T_max: 80
+  loss: dice_ce                      # DiceLoss + CrossEntropyLoss
+  dice_weight: 0.5
+  ce_weight: 0.5
+  early_stopping_patience: 15
+  image_size: 256                    # Watertank native resolution
+
+data:
+  train_dir: ../data/splits/train
+  val_dir: ../data/splits/val
+  test_dir: ../data/splits/test
+
+output:
+  checkpoint_dir: ../models/checkpoints/unet
+  best_model: best_unet_resnet34.pt

@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRISHTI · Project Record</title>
+<meta name="description" content="Full technical record of the DRISHTI marine-debris sonar detection system — the problem, the architecture reasoning, three training runs, the ONNX edge build, per-module theory and physics with flow diagrams, and what to build next.">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f2f5f6;--surface:#fcfdfd;--surface-2:#e9edef;--surface-3:#f6f8f9;
+    --ink:#0e141a;--ink-2:#46525a;--muted:#79858c;
+    --rule:#d9e0e3;--rule-strong:#c0c9cd;
+    --accent:#0c7c8c;--accent-soft:#e0eff1;--accent-ink:#0a5a66;
+    --good:#0a7a1e;--good-soft:#e2f1e6;
+    --warn:#96620a;--warn-soft:#f5ead6;
+    --crit:#bf2e2e;--crit-soft:#f6e1e1;
+    --shadow:0 1px 2px rgba(14,20,26,.05),0 10px 26px -14px rgba(14,20,26,.16);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#080d10;--surface:#101619;--surface-2:#1a2327;--surface-3:#141b1f;
+    --ink:#eef3f5;--ink-2:#a7b3b9;--muted:#78848a;
+    --rule:#242e33;--rule-strong:#333f45;
+    --accent:#3eb4c4;--accent-soft:#112f35;--accent-ink:#7fd3de;
+    --good:#3ebd55;--good-soft:#123219;
+    --warn:#dd9e1c;--warn-soft:#31280e;
+    --crit:#e05a5a;--crit-soft:#341a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -16px rgba(0,0,0,.65);
+  }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#080d10;--surface:#101619;--surface-2:#1a2327;--surface-3:#141b1f;
+    --ink:#eef3f5;--ink-2:#a7b3b9;--muted:#78848a;
+    --rule:#242e33;--rule-strong:#333f45;
+    --accent:#3eb4c4;--accent-soft:#112f35;--accent-ink:#7fd3de;
+    --good:#3ebd55;--good-soft:#123219;--warn:#dd9e1c;--warn-soft:#31280e;
+    --crit:#e05a5a;--crit-soft:#341a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -16px rgba(0,0,0,.65);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  .cover{max-width:1080px;margin:0 auto;padding:60px 24px 30px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin:0 0 18px;display:flex;align-items:center;gap:12px}
+  .eyebrow::after{content:"";height:1px;flex:1;background:var(--rule)}
+  h1{font-size:clamp(2.1rem,6vw,3.6rem);line-height:1.03;letter-spacing:-.025em;font-weight:600;margin:0 0 18px;text-wrap:balance}
+  .lede{font-size:1.2rem;color:var(--ink-2);margin:0 0 28px;max-width:64ch;text-wrap:pretty}
+  .metastrip{display:flex;flex-wrap:wrap;gap:8px 10px;font-family:"IBM Plex Mono",monospace;font-size:12px}
+  .metastrip span{background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;padding:4px 10px;color:var(--ink-2)}
+  .metastrip b{color:var(--ink);font-weight:600}
+
+  .toc{max-width:1080px;margin:26px auto 0;padding:20px 24px;border-top:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong)}
+  .toc ol{margin:0;padding:0;list-style:none;counter-reset:t;columns:2;column-gap:40px;font-size:14px}
+  .toc li{counter-increment:t;padding:4px 0;break-inside:avoid}
+  .toc li::before{content:counter(t,decimal-leading-zero);font-family:"IBM Plex Mono",monospace;color:var(--accent);font-size:12px;margin-right:10px}
+  .toc a{color:var(--ink-2);text-decoration:none}
+  .toc a:hover{color:var(--accent)}
+  @media(max-width:640px){.toc ol{columns:1}}
+
+  section{max-width:1080px;margin:0 auto;padding:30px 24px 0}
+  .col{max-width:760px}
+  h2{font-size:1.55rem;line-height:1.15;font-weight:600;letter-spacing:-.015em;margin:52px 0 6px;padding-top:26px;border-top:2px solid var(--ink);text-wrap:balance}
+  h2 .h2n{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--accent);display:block;letter-spacing:.12em;margin-bottom:6px;font-weight:500}
+  h3{font-size:1.12rem;font-weight:600;margin:30px 0 6px}
+  h4{font-size:.98rem;font-weight:600;margin:20px 0 4px;color:var(--ink-2)}
+  p{margin:12px 0;max-width:74ch}
+  strong{font-weight:600}
+  a{color:var(--accent-ink)}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+  .subhead{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:34px 0 2px;font-weight:500}
+
+  .callout{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:18px 22px;margin:22px 0;box-shadow:var(--shadow)}
+  .callout h4{margin:0 0 6px;color:var(--ink)}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.good{border-left-color:var(--good)}
+  .formula{background:var(--surface-3);border:1px solid var(--rule);border-radius:8px;padding:14px 18px;margin:16px 0;font-family:"IBM Plex Mono",monospace;font-size:13.5px;color:var(--ink);overflow-x:auto}
+  .formula .lbl{color:var(--muted);font-size:11px;display:block;margin-bottom:6px;letter-spacing:.03em}
+
+  .tbl{overflow-x:auto;margin:18px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+  tbody td:first-child{font-weight:500}
+  td.mono{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+  tr.hl td{background:var(--accent-soft)}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;letter-spacing:.02em;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+  .pill.good{color:var(--good);background:var(--good-soft)}
+  .pill.warn{color:var(--warn);background:var(--warn-soft)}
+  .pill.crit{color:var(--crit);background:var(--crit-soft)}
+  .pill.flat{color:var(--ink-2);background:var(--surface-2)}
+  .pill.accent{color:var(--accent-ink);background:var(--accent-soft)}
+
+  figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:22px 22px 15px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:13px;color:var(--muted);margin-top:14px;max-width:76ch}
+  .fig-t{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-bottom:16px}
+  svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .l1{fill:var(--ink);font-size:12.5px}
+  .l2{fill:var(--ink-2);font-size:11px}
+  .l3{fill:var(--muted);font-size:10px}
+
+  ul.clean{list-style:none;padding:0;margin:14px 0}
+  ul.clean li{padding:7px 0 7px 26px;position:relative;border-bottom:1px solid var(--rule);font-size:14.5px}
+  ul.clean li:last-child{border-bottom:0}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:14px;width:8px;height:8px;border:1.6px solid var(--accent);border-radius:2px}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:20px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:2px 0 18px 44px;border-left:1px solid var(--rule);margin-left:13px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:-14px;top:-2px;width:27px;height:27px;border-radius:50%;background:var(--surface);border:1px solid var(--rule-strong);color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  ol.steps>li:last-child{border-left-color:transparent}
+  ol.steps>li h4{margin:0 0 2px;color:var(--ink)}
+  ol.steps>li p{margin:3px 0;font-size:14px;color:var(--ink-2)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:18px 0}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+
+  pre.code{margin:14px 0;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:15px 17px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.7;color:var(--ink-2);box-shadow:var(--shadow)}
+  pre.code .c{color:var(--muted)}
+  pre.code .k{color:var(--accent-ink)}
+
+  .modbar{display:flex;align-items:center;gap:14px;margin:44px 0 0;padding:16px 20px;background:var(--surface-2);border:1px solid var(--rule);border-radius:10px}
+  .modbar .num{font-family:"IBM Plex Mono",monospace;font-size:1.6rem;font-weight:600;color:var(--accent)}
+  .modbar .t{font-size:1.15rem;font-weight:600}
+  .modbar .s{font-size:12.5px;color:var(--muted)}
+
+  footer{max-width:1080px;margin:44px auto 0;padding:22px 24px 60px;border-top:2px solid var(--ink);color:var(--muted);font-size:12px;font-family:"IBM Plex Mono",monospace}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+</head>
+<body>
+
+<div class="cover">
+  <p class="eyebrow">DRISHTI &nbsp;·&nbsp; SIH 2026 &nbsp;·&nbsp; Problem Statement 26057 &nbsp;·&nbsp; project record</p>
+  <h1>Detecting man-made debris in side-scan sonar</h1>
+  <p class="lede">The full account: how we read the problem, the architecture we reasoned our way to, three
+  training runs, the edge/ONNX build, the theory and physics inside each module with its flow diagram, and
+  the directions still open.</p>
+  <div class="metastrip">
+    <span><b>Model</b> YOLOv8s detector</span>
+    <span><b>Classes</b> 4 shipped (5 trained)</span>
+    <span><b>Runs</b> 3</span>
+    <span><b>Best real class</b> pipeline AP50 0.98</span>
+    <span><b>Edge</b> FP32 ONNX · torch-free · ~90 ms/tile CPU</span>
+    <span><b>Compiled</b> 2026-09-01</span>
+  </div>
+</div>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#p1">The problem</a></li>
+    <li><a href="#p2">How we approached it</a></li>
+    <li><a href="#p3">Data strategy</a></li>
+    <li><a href="#p4">Run 1 — the first detector</a></li>
+    <li><a href="#p5">Changes into Run 2</a></li>
+    <li><a href="#p6">Run 2 — cleaner, and the modules</a></li>
+    <li><a href="#p7">Changes into the preprocessed restart</a></li>
+    <li><a href="#p8">Run 3 — preprocessed, and the ablation verdict</a></li>
+    <li><a href="#p9">Edge deployment — ONNX export</a></li>
+    <li><a href="#p10">The modules — theory, physics &amp; architecture</a></li>
+    <li><a href="#p11">The complete system</a></li>
+    <li><a href="#p_lit">Related work — where DRISHTI sits</a></li>
+    <li><a href="#p12">How to run it</a></li>
+    <li><a href="#p13">Directions ahead</a></li>
+    <li><a href="#p14">Appendix — files &amp; data provenance</a></li>
+  </ol>
+</nav>
+
+<!-- ============================== 01 ============================== -->
+<section id="p1">
+  <h2><span class="h2n">01</span>The problem</h2>
+  <p class="col">Problem Statement 26057 (Ministry of Earth Sciences / NIOT) asks for an
+  <strong>end-to-end computer-vision pipeline</strong> that ingests side-scan sonar (SSS) imagery, finds
+  man-made debris against a complex natural seabed, and produces actionable, located data. The hazards it
+  names: <strong>shipwrecks, pipes, cylinders, and entangled debris nets</strong> &mdash; &ldquo;ghost
+  nets,&rdquo; the abandoned fishing gear that keeps killing marine life for decades.</p>
+  <p class="col">Manual review of thousands of kilometres of sonar logs is slow and error-prone, and debris
+  hides among rock fields, sand ripples and ridges. The system has to cope with what acoustic imaging does
+  to a scene &mdash; <strong>speckle noise, varying pixel resolution, acoustic shadows, and data
+  dropouts</strong> from vehicle heave, pitch and roll &mdash; and it has to run on the edge, on or near an
+  autonomous underwater vehicle, without a cloud in reach.</p>
+
+  <figure>
+    <div class="fig-t">Why this is hard — one side-scan swath</div>
+    <svg viewBox="0 0 900 300" role="img" aria-label="A side-scan sonar diagram. A tow-fish near the surface sends two fan-shaped beams down and out to port and starboard. On the seabed: a raised wreck produces a bright acoustic return and a dark shadow trailing away from the sensor track. Nearby, a rock cluster produces a strong return but no clean trailing shadow. Sand ripples produce repeating light and dark bands.">
+      <line x1="20" y1="26" x2="880" y2="26" stroke="var(--rule-strong)" stroke-width="1"/>
+      <text x="24" y="20" class="l3">sea surface</text>
+      <rect x="120" y="30" width="40" height="18" rx="4" fill="var(--accent)"/>
+      <text x="140" y="62" text-anchor="middle" class="l2">tow-fish</text>
+      <path d="M140 48 L470 250 M140 48 L60 250" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.5"/>
+      <path d="M140 48 L470 250 L60 250 Z" fill="var(--accent)" opacity="0.06"/>
+      <text x="300" y="150" class="l3" transform="rotate(30 300 150)">acoustic beam (slant range)</text>
+      <line x1="20" y1="252" x2="880" y2="252" stroke="var(--ink-2)" stroke-width="2"/>
+      <text x="24" y="270" class="l3">seabed</text>
+      <path d="M430 252 q10 -26 34 -22 q22 4 20 22 Z" fill="var(--ink)"/>
+      <rect x="426" y="246" width="42" height="7" fill="#fff" opacity="0.85"/>
+      <rect x="468" y="248" width="120" height="8" fill="var(--muted)" opacity="0.55"/>
+      <text x="452" y="292" text-anchor="middle" class="l2" fill="var(--good)">wreck</text>
+      <text x="452" y="240" text-anchor="middle" class="l3">bright highlight</text>
+      <text x="528" y="276" text-anchor="middle" class="l3">trailing shadow &rarr;</text>
+      <g fill="var(--ink-2)"><circle cx="650" cy="248" r="7"/><circle cx="664" cy="250" r="5"/><circle cx="640" cy="250" r="4"/></g>
+      <rect x="632" y="244" width="40" height="6" fill="#fff" opacity="0.6"/>
+      <text x="652" y="292" text-anchor="middle" class="l2" fill="var(--crit)">rock cluster</text>
+      <text x="652" y="234" text-anchor="middle" class="l3">strong return, no clean shadow</text>
+      <g stroke="var(--muted)" stroke-width="3" opacity="0.5"><line x1="740" y1="252" x2="770" y2="252"/><line x1="784" y1="252" x2="814" y2="252"/><line x1="828" y1="252" x2="858" y2="252"/></g>
+      <text x="800" y="272" text-anchor="middle" class="l3">sand ripples</text>
+    </svg>
+    <figcaption>An object's identity in SSS is carried as much by its <em>shadow</em> as its bright return.
+    A real raised object throws a shadow whose length matches the sensor geometry; a rock cluster returns
+    strongly but its shadow doesn't &mdash; that difference is the basis of our false-positive filter
+    (&sect;10.2).</figcaption>
+  </figure>
+
+  <h3>The four deliverables</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>#</th><th>Component</th><th>What it must do</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>Detection / segmentation model</td><td>Draw boxes (or masks) around man-made objects — shipwrecks, pipes, cylinders, nets.</td></tr>
+        <tr><td class="num">2</td><td>Confidence &amp; noise filtering</td><td>Minimise false positives from shadows and rock clusters; output a clear 0–100 % score per detection.</td></tr>
+        <tr><td class="num">3</td><td>Reporting &amp; geotagging</td><td>Read sonar metadata / ping headers → structured JSON/CSV report with lat/lon, size, class per hazard.</td></tr>
+        <tr><td class="num">4</td><td>UI dashboard</td><td>Upload a raw sonar log, view detections on a map in real time, download the report.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== 02 ============================== -->
+<section id="p2">
+  <h2><span class="h2n">02</span>How we approached it</h2>
+  <p class="col">Four reasoning steps took us from the brief to a concrete architecture.</p>
+
+  <h3>1 &mdash; Detection, not classification</h3>
+  <p class="col">The report needs the <em>location</em> of each hazard, not just &ldquo;this tile contains
+  debris.&rdquo; That rules out a plain classifier and points at an object detector that returns a box per
+  object.</p>
+
+  <h3>2 &mdash; Why YOLO, and why not the alternatives</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Architecture</th><th>Edge speed</th><th>Output</th><th>Verdict for DRISHTI</th></tr></thead>
+      <tbody>
+        <tr><td>Faster R-CNN</td><td>~5–10 FPS (two-stage, heavy)</td><td>boxes</td><td><span class="pill crit">too slow for on-board use</span></td></tr>
+        <tr><td>Standalone U-Net</td><td>~15 FPS, resource-heavy</td><td>semantic mask</td><td><span class="pill warn">semantic, can't separate two overlapping nets</span></td></tr>
+        <tr><td>YOLOv8s</td><td>~40–260 FPS</td><td>instance boxes</td><td><span class="pill good">real-time · mature ONNX/TensorRT export · anchor-free</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col">YOLOv8 <strong>small</strong> specifically: ~11.8 M parameters fits a 6 GB laptop GPU at a
+  usable batch size, and its export path to ONNX (and onward to a Jetson TensorRT engine) is battle-tested
+  &mdash; newer YOLO variants often introduce ops the edge compilers don't yet support.</p>
+
+  <h3>3 &mdash; Boxes now, masks as a roadmap</h3>
+  <p class="col">The PS accepts &ldquo;bounding boxes <em>or</em> pixel-level masks.&rdquo; Every real SSS
+  dataset we could obtain is box-labelled; the only pixel masks (AI4Shipwrecks) have a published benchmark
+  we can cite for the segmentation roadmap. So: <strong>box detection</strong>, and a deterministic
+  geometry check &mdash; not a second network &mdash; as the &ldquo;verify&rdquo; stage.</p>
+
+  <h3>4 &mdash; The pivot: forward-looking sonar &rarr; pure side-scan</h3>
+  <figure>
+    <div class="fig-t">The scope correction, early on</div>
+    <svg viewBox="0 0 900 190" role="img" aria-label="Two approaches. Left, abandoned: forward-looking sonar watertank data, 11 classes of small plastics, instance segmentation. Right, adopted: pure side-scan sonar from multiple real surveys, five hazard classes matching the problem statement, box detection.">
+      <rect x="20" y="30" width="410" height="130" rx="10" fill="var(--crit-soft)" stroke="var(--crit)" opacity="0.9"/>
+      <text x="40" y="56" class="l1" font-weight="600">Abandoned</text>
+      <text x="40" y="78" class="l2">forward-looking sonar · watertank tank data</text>
+      <text x="40" y="98" class="l2">11 classes of small plastics / cans / tools</text>
+      <text x="40" y="118" class="l2">instance segmentation</text>
+      <text x="40" y="142" class="l3">wrong sensor, wrong targets, wrong task</text>
+      <rect x="470" y="30" width="410" height="130" rx="10" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="490" y="56" class="l1" font-weight="600">Adopted</text>
+      <text x="490" y="78" class="l2">pure side-scan sonar · 6+ real surveys</text>
+      <text x="490" y="98" class="l2">crab-pot · pipeline · shipwreck · net · cylinder</text>
+      <text x="490" y="118" class="l2">box detection (YOLOv8s)</text>
+      <text x="490" y="142" class="l3">matches the sensor and the named hazards</text>
+      <path d="M432 95 H468" stroke="currentColor" stroke-width="1.5" marker-end="url(#pv)"/>
+      <defs><marker id="pv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+    </svg>
+    <figcaption>The first plan trained on forward-looking sonar tank imagery. Wrong sensor, wrong target
+    list; the whole ML track was re-based onto real side-scan surveys before Run 1.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <h4>The two-stage idea</h4>
+    <p style="margin:6px 0 0">Stage A (YOLOv8) is a fast scout that proposes boxes. Stage B is a
+    <em>deterministic</em> check: does the object's acoustic shadow have the length that sonar geometry
+    predicts for something of its apparent height, at that range and altitude? A rock cluster fails it. No
+    second network, no extra training data. The physics is in &sect;10.2.</p>
+  </div>
+</section>
+
+<!-- ============================== 03 ============================== -->
+<section id="p3">
+  <h2><span class="h2n">03</span>Data strategy</h2>
+  <p class="col">Labelled SSS imagery of specific debris is scarce &mdash; there is <em>no</em> public real
+  dataset of ghost nets in side-scan. So the training set is assembled from many real surveys, one class at
+  a time, with synthetic fill only where reality offers nothing.</p>
+  <figure>
+    <div class="fig-t">Where each class comes from</div>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Five class rows. crab_pot from a HuggingFace side-scan set. submarine_pipeline from SubPipeMini2 survey strips, tiled. shipwreck from AI4Shipwrecks transect strips plus Roboflow ship and plane imagery. ghost_net is 100 percent synthetic with modelled acoustic physics. mine_cylinder from a Kaggle sonar-mine set, MILCO and NonMILCO contacts, with a synthetic top-up.">
+      <g class="l2">
+        <text x="20" y="34" class="l1" font-weight="600">class</text>
+        <text x="180" y="34" class="l1" font-weight="600">source</text>
+        <text x="720" y="34" class="l1" font-weight="600">nature</text>
+      </g>
+      <line x1="20" y1="44" x2="880" y2="44" stroke="var(--rule)"/>
+      <g class="l2">
+        <text x="20" y="72" class="m">crab_pot</text><text x="180" y="72">HuggingFace SSS crab-pot set</text><text x="720" y="72" class="l3">real</text>
+        <text x="20" y="104" class="m">submarine_pipeline</text><text x="180" y="104">SubPipeMini2 survey strips &rarr; tiled</text><text x="720" y="104" class="l3">real</text>
+        <text x="20" y="136" class="m">shipwreck</text><text x="180" y="136">AI4Shipwrecks transects + Roboflow ship/plane</text><text x="720" y="136" class="l3">real</text>
+        <text x="20" y="168" class="m" fill="var(--warn)">ghost_net</text><text x="180" y="168" fill="var(--warn)">procedural mesh + modelled acoustic physics</text><text x="720" y="168" class="l3" fill="var(--warn)">100% synthetic</text>
+        <text x="20" y="200" class="m">mine_cylinder</text><text x="180" y="200">Kaggle sonar-mine (MILCO + NonMILCO) + synth top-up</text><text x="720" y="200" class="l3">real + synth</text>
+      </g>
+      <line x1="20" y1="216" x2="880" y2="216" stroke="var(--rule)"/>
+      <text x="20" y="238" class="l3">+ object-free "background" tiles as hard negatives &nbsp;·&nbsp; held-out real test slice never seen in training</text>
+    </svg>
+    <figcaption>Guiding rule: synthetic data is a specialist filler, never a substitute. It exists for
+    ghost_net because nothing real does, and as a small top-up for the thinnest classes.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 04 ============================== -->
+<section id="p4">
+  <h2><span class="h2n">04</span>Run 1 — the first detector</h2>
+  <p class="col">Five classes, YOLOv8s fine-tuned from COCO, 120 epochs on the RTX 4050. SSS-specific
+  augmentation from the start: colour jitter off (grayscale), <strong>vertical flip off</strong> (it would
+  invert the highlight&rarr;shadow relation), and brightness / scale / random-erase jitter mapped to real
+  sonar nuisances (gain, resolution spread, motion dropouts).</p>
+
+  <h3>Held-out test results</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Class</th><th class="num">AP@50</th><th class="num">Precision</th><th class="num">Recall</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr><td>submarine_pipeline</td><td class="num">0.982</td><td class="num">0.92</td><td class="num">0.99</td><td><span class="pill good">strong</span></td></tr>
+        <tr><td>ghost_net</td><td class="num">0.995</td><td class="num">1.00</td><td class="num">1.00</td><td><span class="pill flat">synthetic echo</span></td></tr>
+        <tr><td>shipwreck</td><td class="num">0.453</td><td class="num">0.57</td><td class="num">0.51</td><td><span class="pill warn">weak + over-fires on rock</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="num">0.431</td><td class="num">0.58</td><td class="num">0.48</td><td><span class="pill warn">weak</span></td></tr>
+        <tr><td>crab_pot</td><td class="num">0.118</td><td class="num">0.37</td><td class="num">0.24</td><td><span class="pill crit">failing — misses 76 %</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col mono" style="font-size:12.5px;color:var(--muted)">overall: mAP50 0.596 · mAP50-95 0.440 ·
+  precision 0.687 · recall 0.643 · false-positive rate 0.313</p>
+
+  <h3>What broke</h3>
+  <ul class="clean col">
+    <li><strong>crab_pot collapsed</strong> — 60 % of true crab pots predicted as background. Small, low-contrast; the model wasn't firing.</li>
+    <li><strong>AI4Shipwrecks tiling bug</strong> — each ~5,600-px transect strip was fed whole, so &ldquo;one wreck&rdquo; became one giant box. Only 152 usable tiles from 141 strips.</li>
+    <li><strong>KLSG weak labels</strong> — cropped ship/plane images were given a full-frame box, teaching &ldquo;big blob = shipwreck&rdquo; &rarr; false alarms on rock fields.</li>
+    <li><strong>No calibration, no background tiles, split ratios off</strong> — validation set nearly as large as train and crab-pot-heavy.</li>
+  </ul>
+</section>
+
+<!-- ============================== 05 ============================== -->
+<section id="p5">
+  <h2><span class="h2n">05</span>Changes into Run 2</h2>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Change</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>crab_pot training images 900 → 1,600</td><td>the failing class was starved (900 of 5,721 available)</td></tr>
+        <tr><td>drop the KLSG full-frame shipwreck boxes</td><td>they were the rock-cluster false-alarm engine</td></tr>
+        <tr><td>+350 synthetic mine_cylinders</td><td>pad the thinnest real class</td></tr>
+        <tr><td>background tiles 400 → 500</td><td>more explicit &ldquo;empty seabed&rdquo; to reject</td></tr>
+        <tr><td>rebuild splits ~80/10/10, cap the dominant class in every split</td><td>fix the oversized, crab-heavy validation set</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== 06 ============================== -->
+<section id="p6">
+  <h2><span class="h2n">06</span>Run 2 — cleaner, and the modules</h2>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Test metric</th><th class="num">Run 1</th><th class="num">Run 2</th><th class="num">Δ</th></tr></thead>
+      <tbody>
+        <tr><td>mAP@50</td><td class="num">0.596</td><td class="num">0.606</td><td class="num">+0.010</td></tr>
+        <tr class="hl"><td>precision</td><td class="num">0.687</td><td class="num">0.734</td><td class="num">+0.047</td></tr>
+        <tr class="hl"><td>false-positive rate</td><td class="num">0.313</td><td class="num">0.266</td><td class="num">−0.047</td></tr>
+        <tr><td>shipwreck AP50 / precision</td><td class="num">0.45 / 0.57</td><td class="num">0.45 / 0.66</td><td class="num">flat / +0.09</td></tr>
+        <tr><td>crab_pot AP50</td><td class="num">0.118</td><td class="num">0.193</td><td class="num">+0.075, still failing</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col"><strong>Read:</strong> same detection coverage, meaningfully cleaner. Dropping KLSG worked
+  exactly as predicted. Doubling crab-pot data moved it but nowhere near usable &mdash; two runs proved
+  crab pots are a <em>separability</em> problem, not a data-volume one.</p>
+
+  <div class="callout">
+    <h4>Decision — ship four classes</h4>
+    <p style="margin:6px 0 0">crab_pot below the pre-agreed 0.25 bar &rarr; <strong>filtered
+    downstream</strong> (kept in training as a hard-negative-ish class, dropped from the product). The four
+    that ship &mdash; pipeline, shipwreck, cylinder, net &mdash; are exactly the hazards the PS names.</p>
+  </div>
+
+  <h3>First measurements: Modules 2 &amp; 3</h3>
+  <ul class="clean col">
+    <li><strong>Module 2 — per-class score thresholds work</strong> (shipwreck precision 0.63&rarr;0.73, cylinder 0.58&rarr;0.75). A single global calibrator <em>failed</em> (ECE 0.042 &rarr; 0.090). The shadow check is inconclusive on cropped tiles.</li>
+    <li><strong>Module 3 — built and validated.</strong> XTF-parsed position agrees with the recorded navigation to <strong>under one metre</strong>. Output: JSON + CSV + Leaflet-ready GeoJSON with a <code>ping_id</code> audit pointer.</li>
+    <li><strong>End-to-end wire-up.</strong> One call chains detect &rarr; Module 2 &rarr; Module 3. On a full AURORA transect (an unseen instrument/seabed) the detector fired 15 weak candidates, Module 2 kept 1 for review &mdash; the pipeline runs in ~8 s, and the model does not transfer across surveys without fine-tuning.</li>
+  </ul>
+</section>
+
+<!-- ============================== 07 ============================== -->
+<section id="p7">
+  <h2><span class="h2n">07</span>Changes into the preprocessed restart</h2>
+  <p class="col">A bundle: address acoustic noise at the front (Module 0), and fix the two data problems
+  that capped shipwreck and cylinder.</p>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Change</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Module 0 — preprocessing</strong></td><td>Lee speckle filter + CLAHE contrast, applied to every training tile <em>and</em> the identical filter at serve time, so the model never sees an unfamiliar distribution. Theory in &sect;10.0.</td></tr>
+        <tr><td><strong>AI4Shipwrecks overlap re-tile</strong></td><td>tile stride 640 → 320 (50 % overlap) + a morphological close on the mask so a broken hull reads as one blob. Yield: <strong>152 → 890 tiles</strong>, 329 → 1,978 wreck boxes.</td></tr>
+        <tr><td><strong>mine_cylinder + NonMILCO</strong></td><td>the PS asks for &ldquo;cylinders,&rdquo; not &ldquo;mines&rdquo; — keep both MILCO and NonMILCO contacts. 315 → 493 real instances.</td></tr>
+        <tr><td>image size held at 640</td><td>keep the comparison compute-fair against Run 2.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figure>
+    <div class="fig-t">The shipwreck tiling fix</div>
+    <svg viewBox="0 0 900 150" role="img" aria-label="141 AI4Shipwrecks transect strips. Old tiling with no overlap produced 152 usable tiles and 329 wreck boxes. New tiling with 50 percent overlap and a mask close produced 890 tiles and 1978 boxes. Shipwreck training instances went from 75 in Run 1 to 1554.">
+      <rect x="16" y="46" width="150" height="58" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+      <text x="91" y="70" text-anchor="middle" class="l1">141 strips</text><text x="91" y="88" text-anchor="middle" class="l3 m">~5600 × 1728 px</text>
+      <path d="M166 60 H206" stroke="var(--crit)" stroke-width="1.5" marker-end="url(#t3a)"/>
+      <path d="M166 90 H206" stroke="var(--good)" stroke-width="1.5" marker-end="url(#t3b)"/>
+      <defs>
+        <marker id="t3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--crit)"/></marker>
+        <marker id="t3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--good)"/></marker>
+      </defs>
+      <text x="186" y="48" class="l3" fill="var(--crit)">stride 640</text>
+      <text x="186" y="112" class="l3" fill="var(--good)">stride 320 + mask-close</text>
+      <rect x="212" y="34" width="200" height="46" rx="7" fill="var(--crit-soft)" stroke="var(--crit)"/>
+      <text x="312" y="54" text-anchor="middle" class="l1">152 tiles</text><text x="312" y="71" text-anchor="middle" class="l3">329 boxes · Run 1–2</text>
+      <rect x="212" y="86" width="200" height="46" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="312" y="106" text-anchor="middle" class="l1">890 tiles</text><text x="312" y="123" text-anchor="middle" class="l3">1,978 boxes · Run 3</text>
+      <path d="M412 108 H452" stroke="currentColor" stroke-width="1.4" marker-end="url(#t3b)"/>
+      <rect x="454" y="80" width="430" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/>
+      <text x="474" y="102" class="l1">shipwreck training instances</text>
+      <text x="474" y="122" class="l2 m">Run 1: ~75 &nbsp;→&nbsp; Run 2: 919 &nbsp;→&nbsp; Run 3: <tspan fill="var(--good)">1,554 real</tspan></text>
+    </svg>
+    <figcaption>The overlap re-tile also made the <em>test</em> set harder (525 shipwreck instances vs 290)
+    &mdash; relevant to reading the Run 3 numbers.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 08 ============================== -->
+<section id="p8">
+  <h2><span class="h2n">08</span>Run 3 — preprocessed, and the ablation verdict</h2>
+  <p class="col">Early-stopped at epoch 96, 2.1 h. Evaluated on the (now preprocessed, harder) test set.</p>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Test metric</th><th class="num">Run 2 (raw)</th><th class="num">Run 3 (preprocessed)</th><th class="num">Δ</th></tr></thead>
+      <tbody>
+        <tr><td>mAP@50</td><td class="num">0.606</td><td class="num">0.580</td><td class="num">−0.026</td></tr>
+        <tr><td>mAP@50-95</td><td class="num">0.437</td><td class="num">0.434</td><td class="num">−0.003</td></tr>
+        <tr class="hl"><td>precision</td><td class="num">0.734</td><td class="num">0.734</td><td class="num">0.000</td></tr>
+        <tr class="hl"><td>false-positive rate</td><td class="num">0.266</td><td class="num">0.266</td><td class="num">0.000</td></tr>
+        <tr><td>submarine_pipeline AP50</td><td class="num">0.994</td><td class="num">0.984</td><td class="num">−0.010</td></tr>
+        <tr><td>mine_cylinder AP50</td><td class="num">0.398</td><td class="num">0.424</td><td class="num">+0.026</td></tr>
+        <tr><td>shipwreck AP50</td><td class="num">0.450</td><td class="num">0.302</td><td class="num">see note</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn">
+    <h4>The shipwreck drop is the test set, not the model</h4>
+    <p style="margin:6px 0 0">Running the <em>Run 2</em> model on the <em>Run 3</em> test set scores
+    shipwreck 0.278 — <em>below</em> the preprocessed model's 0.302. The overlap re-tile 3×'d the shipwreck
+    test instances with partial and near-duplicate tiles, so shipwreck AP50 is structurally ~0.28–0.30 on
+    that set for either model. The two are effectively tied.</p>
+  </div>
+  <div class="callout">
+    <h4>How the shipwreck number reads against the literature</h4>
+    <p style="margin:6px 0 0">Two 2026 papers benchmark the <em>same</em> AI4Shipwrecks data (&sect;12). A
+    single-class YOLO on a clean split tops out at mAP50 ~0.72–0.76 (DFSE-YOLO; vanilla YOLOv8 0.716);
+    human annotators agree only 50–60&nbsp;% (SW-Net). Our figure is that ceiling minus a deliberately
+    harder test set and multi-class dilution. The failure modes are the field-standard
+    <strong>Type&nbsp;I</strong> (false positives on rock / ripple / shadow) and <strong>Type&nbsp;II</strong>
+    (misses on buried, nadir-gap or collapsed hulls); a calibrated 50&nbsp;px box-merge (&sect;14) is the
+    named route to close the gap.</p>
+  </div>
+  <div class="callout good">
+    <h4>Verdict: preprocessing gave no accuracy gain</h4>
+    <p style="margin:6px 0 0">On a matched protocol the models are statistically indistinguishable —
+    identical precision, identical false-positive rate, mAP within noise, pipeline and net unchanged. A
+    clean ablation: <em>the detector learns effective denoising from raw pixels plus augmentation.</em>
+    The restart's data changes were kept; preprocessing is retained only because CLAHE'd input makes
+    acoustic shadows more detectable (shadow-presence separation 0.23 → a 0.10 gap).</p>
+  </div>
+
+  <h3>Per-class calibration — now correct</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th></th><th class="num">Run 2 · global calibrator</th><th class="num">Run 3 · per-class calibrator</th></tr></thead>
+      <tbody>
+        <tr><td>ECE, raw scores (test)</td><td class="num">0.042</td><td class="num">0.052</td></tr>
+        <tr class="hl"><td>ECE, calibrated (test)</td><td class="num">0.090 &nbsp;(worse)</td><td class="num">0.037 &nbsp;(better)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <div class="fig-t">Per-class AP@50 across the three runs (held-out test)</div>
+    <svg viewBox="0 0 900 316" role="img" aria-label="Grouped bars of AP50 per class for Run 1, Run 2 and Run 3. submarine_pipeline: 0.98, 0.99, 0.98. ghost_net synthetic: 0.995 all three. shipwreck: 0.45, 0.45, 0.30 on a harder test set. mine_cylinder: 0.43, 0.40, 0.42. crab_pot: 0.12, 0.19, 0.19, dropped from the product.">
+      <g class="l3" text-anchor="end">
+        <text x="150" y="46">submarine_pipeline</text><text x="150" y="96">ghost_net *</text>
+        <text x="150" y="146">shipwreck</text><text x="150" y="196">mine_cylinder</text><text x="150" y="246">crab_pot †</text>
+      </g>
+      <g stroke="var(--rule)"><line x1="160" y1="20" x2="160" y2="270"/><line x1="340" y1="20" x2="340" y2="270"/><line x1="520" y1="20" x2="520" y2="270"/><line x1="700" y1="20" x2="700" y2="270"/><line x1="880" y1="20" x2="880" y2="270"/></g>
+      <g class="l3" text-anchor="middle"><text x="160" y="286">0</text><text x="340" y="286">.25</text><text x="520" y="286">.50</text><text x="700" y="286">.75</text><text x="880" y="286">1.0</text></g>
+      <g fill="var(--muted)"><rect x="160" y="28" width="707" height="9"/></g>
+      <g fill="var(--accent)"><rect x="160" y="39" width="716" height="9"/></g>
+      <g fill="var(--good)"><rect x="160" y="50" width="709" height="9"/></g>
+      <g fill="var(--muted)"><rect x="160" y="78" width="716" height="9"/></g>
+      <g fill="var(--accent)"><rect x="160" y="89" width="716" height="9"/></g>
+      <g fill="var(--good)" opacity="0.55"><rect x="160" y="100" width="716" height="9"/></g>
+      <g fill="var(--muted)"><rect x="160" y="128" width="326" height="9"/></g>
+      <g fill="var(--accent)"><rect x="160" y="139" width="324" height="9"/></g>
+      <g fill="var(--warn)"><rect x="160" y="150" width="217" height="9"/></g>
+      <text x="392" y="158" class="l3">0.30 on a harder test set</text>
+      <g fill="var(--muted)"><rect x="160" y="178" width="310" height="9"/></g>
+      <g fill="var(--accent)"><rect x="160" y="189" width="287" height="9"/></g>
+      <g fill="var(--warn)"><rect x="160" y="200" width="305" height="9"/></g>
+      <g fill="var(--muted)"><rect x="160" y="228" width="85" height="9"/></g>
+      <g fill="var(--accent)"><rect x="160" y="239" width="139" height="9"/></g>
+      <g fill="var(--crit)"><rect x="160" y="250" width="139" height="9"/></g>
+      <g class="l3">
+        <rect x="600" y="18" width="10" height="9" fill="var(--muted)"/><text x="616" y="26">Run 1</text>
+        <rect x="672" y="18" width="10" height="9" fill="var(--accent)"/><text x="688" y="26">Run 2</text>
+        <rect x="744" y="18" width="10" height="9" fill="var(--good)"/><text x="760" y="26">Run 3</text>
+      </g>
+      <text x="160" y="300" class="l3">* synthetic — not a field number &nbsp;&nbsp; † dropped from the shipped product</text>
+    </svg>
+    <figcaption>Pipeline is production-grade across all three runs. shipwreck and cylinder plateau at
+    ~0.4–0.45 on their own test sets — the real-data ceiling for those sources, not a training failure.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 09  ONNX ============================== -->
+<section id="p9">
+  <h2><span class="h2n">09</span>Edge deployment — ONNX export</h2>
+  <p class="col">An AUV has no GPU and no room for a 1.5 GB PyTorch runtime. The deployment target is an
+  <strong>ONNX graph run by onnxruntime</strong> &mdash; a ~50 MB runtime with a numpy + opencv pre/post
+  path and <em>no PyTorch import at all</em>.</p>
+
+  <h4>Theory — what an ONNX export is, and what precision costs</h4>
+  <p class="col">Training frameworks store a model as code + weights. <strong>ONNX</strong> is a
+  framework-neutral computation graph: the same conv / add / sigmoid ops, serialised, so a lean C++ or
+  Python runtime can execute them without the training library. Ops get <em>fused</em> (Conv + BatchNorm +
+  activation → one kernel) and constant-folded on export.</p>
+  <p class="col"><strong>Precision.</strong> Weights are 32-bit floats. <strong>FP16</strong> halves the
+  size and, on a GPU with half-precision units (a Jetson), roughly doubles throughput at negligible
+  accuracy cost. <strong>INT8</strong> maps each tensor to 256 integer levels via a learned scale
+  (calibrated by pushing ~100 real tiles through and recording activation ranges) &mdash; 4× smaller, and
+  much faster <em>on hardware with INT8 acceleration</em> (VNNI / AVX-512 / a TensorRT engine). Without
+  that hardware, the quantise/dequantise nodes make it slower, and on faint sonar targets the coarse
+  levels can collapse the class scores entirely.</p>
+
+  <h3>Measured — three precisions on the laptop CPU</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Model</th><th class="num">Size</th><th class="num">CPU latency</th><th>Accuracy (test, torch-free path)</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr class="hl"><td>FP32 ONNX</td><td class="num">44.8 MB</td><td class="num">~90 ms / tile</td><td>matches PyTorch — pipeline P .97 R .97, shipwreck P .64 R .34, mine P .58 R .46</td><td><span class="pill good">shipped</span></td></tr>
+        <tr><td>FP16 ONNX</td><td class="num">22.4 MB</td><td class="num">n/a on CPU</td><td>—</td><td><span class="pill accent">Jetson GPU target</span></td></tr>
+        <tr><td>INT8 ONNX</td><td class="num">11.5 MB</td><td class="num">164 ms / tile — slower</td><td><strong>0.00 P / 0.00 R on every class — collapsed</strong></td><td><span class="pill crit">excluded</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <h4>Decision</h4>
+    <p style="margin:6px 0 0"><strong>Ship FP32 ONNX.</strong> 45 MB is trivial for an AUV; the meaningful
+    bar is <em>torch-free, GPU-free, survey-speed</em> — and ~11 tiles/s against a sonar producing a few
+    pings/s clears it. <strong>FP16</strong> is the Jetson deployment (recommended edge precision).
+    <strong>INT8 is excluded</strong> — no CPU speed-up and it destroyed accuracy on faint sonar targets,
+    exactly the known risk; a usable INT8 engine would need quantization-aware training or head-excluded
+    PTQ, a research task. The 2026 literature (DFSE-YOLO) <em>assumes</em> FP32→INT8 transfers cleanly with
+    &ldquo;proportional&rdquo; loss — our measurement is the counter-evidence for faint sonar targets.</p>
+  </div>
+
+  <figure>
+    <div class="fig-t">The torch-free edge path</div>
+    <svg viewBox="0 0 900 170" role="img" aria-label="Sonar tile goes through Lee and CLAHE preprocessing, then onnxruntime FP32 inference producing a raw output tensor, then a numpy decode of the YOLOv8 output, then numpy non-maximum suppression, then the same Module 2 confidence filter, producing JSON. Runtime is onnxruntime plus numpy plus opencv, about 50 megabytes, no PyTorch.">
+      <defs><marker id="e9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <g font-size="11">
+        <rect x="12" y="46" width="96" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="60" y="70" text-anchor="middle" class="l1">tile</text><text x="60" y="86" text-anchor="middle" class="l3 m">.jpg / .png</text>
+        <rect x="128" y="46" width="120" height="52" rx="7" fill="var(--good-soft)" stroke="var(--good)"/><text x="188" y="66" text-anchor="middle" class="l1">Lee + CLAHE</text><text x="188" y="82" text-anchor="middle" class="l3 m">cv2 + numpy</text>
+        <rect x="268" y="46" width="130" height="52" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="333" y="66" text-anchor="middle" class="l1">onnxruntime</text><text x="333" y="82" text-anchor="middle" class="l3 m">FP32 session</text>
+        <rect x="418" y="46" width="120" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/><text x="478" y="66" text-anchor="middle" class="l1">numpy decode</text><text x="478" y="82" text-anchor="middle" class="l3 m">[1,9,8400] → boxes</text>
+        <rect x="558" y="46" width="100" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/><text x="608" y="70" text-anchor="middle" class="l1">numpy NMS</text>
+        <rect x="678" y="46" width="130" height="52" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="743" y="66" text-anchor="middle" class="l1">Module 2</text><text x="743" y="82" text-anchor="middle" class="l3 m">gate + calibrate</text>
+        <rect x="828" y="46" width="60" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="858" y="76" text-anchor="middle" class="l1">JSON</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.4" fill="none">
+        <line x1="108" y1="72" x2="126" y2="72" marker-end="url(#e9)"/>
+        <line x1="248" y1="72" x2="266" y2="72" marker-end="url(#e9)"/>
+        <line x1="398" y1="72" x2="416" y2="72" marker-end="url(#e9)"/>
+        <line x1="538" y1="72" x2="556" y2="72" marker-end="url(#e9)"/>
+        <line x1="658" y1="72" x2="676" y2="72" marker-end="url(#e9)"/>
+        <line x1="808" y1="72" x2="826" y2="72" marker-end="url(#e9)"/>
+      </g>
+      <text x="12" y="128" class="l3">runtime footprint: onnxruntime + numpy + opencv ≈ 50 MB RAM &nbsp;·&nbsp; vs ~1.5 GB just to import torch</text>
+      <text x="12" y="146" class="l3">files: edge/edge_infer.py (core) · edge/onnx_runtime_server.py (FastAPI) · edge/Dockerfile.edge (~200 MB image)</text>
+    </svg>
+    <figcaption>Verified: a shipwreck tile → 91.3 %, auto_confirmed, 110 ms — with no <code>import torch</code>
+    anywhere in the path. The numpy decode is faithful (accuracy matches the framework).</figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 10  MODULES ============================== -->
+<section id="p10">
+  <h2><span class="h2n">10</span>The modules — theory, physics &amp; architecture</h2>
+  <p class="col">Each module below: the idea and the physics it rests on, then the flow it's implemented as.
+  Modules 0–3 are functional; Module 4 is scaffolded (&sect;14).</p>
+
+  <!-- ---------- MODULE 0 ---------- -->
+  <div class="modbar"><span class="num">0</span><div><div class="t">Preprocessing</div><div class="s">reduce acoustic speckle without erasing the edges that carry the signal</div></div></div>
+
+  <p class="subhead">Theory &amp; physics</p>
+  <p class="col">A side-scan image is not formed by light but by <strong>coherent acoustic backscatter</strong>.
+  Within one resolution cell many sub-wavelength scatterers return echoes that add with random relative
+  phase. The result is <strong>speckle</strong>: noise that is <em>multiplicative</em>, not additive &mdash;</p>
+  <div class="formula col"><span class="lbl">observed intensity</span>I<sub>obs</sub>(x) = I<sub>true</sub>(x) · n(x) &nbsp;&nbsp; with &nbsp; E[n] = 1 &nbsp;(n follows a gamma / Rayleigh law)</div>
+  <p class="col">A plain averaging filter suppresses <code>n</code> but also blurs <code>I<sub>true</sub></code>
+  &mdash; and the edges it blurs (object outlines, <em>shadow boundaries</em>) are exactly what a detector
+  keys on. Two adaptive operators fix that:</p>
+  <p class="col"><strong>Lee filter</strong> &mdash; a local linear minimum-mean-square-error estimate. In a
+  window around each pixel it forms the local mean <code>μ</code> and variance <code>σ²</code>, then
+  outputs</p>
+  <div class="formula col"><span class="lbl">Lee (MMSE) update</span>Î(x) = μ + W · ( I(x) − μ ) &nbsp;&nbsp;&nbsp; W = σ²<sub>signal</sub> / ( σ²<sub>signal</sub> + σ²<sub>noise</sub> )</div>
+  <p class="col">In flat seabed the local variance is almost all noise → <code>W → 0</code> → the output is
+  the smoothed local mean. On an edge the local variance is dominated by real structure → <code>W → 1</code>
+  → the pixel is left alone. One filter, edge-aware by construction. This division of labour matches an
+  observation from the SSS literature: the high-resolution <em>shallow</em> layers of a CNN on sonar
+  largely model speckle rather than structure (Lin et al. 2026, &sect;12), so cleaning the input and
+  letting the deeper layers carry the semantics is the right split.</p>
+  <p class="col"><strong>CLAHE</strong> (contrast-limited adaptive histogram equalization) &mdash; histogram
+  equalization stretches intensities to fill the range, lifting faint contrast; done globally it also
+  amplifies speckle in near-uniform sand. CLAHE equalizes <em>per 8×8 tile</em> (bilinearly blended across
+  tile borders) and <strong>clips</strong> each tile histogram at a ceiling before equalizing,
+  redistributing the clipped mass. The clip caps the local gain, so a faint wreck edge is boosted while
+  flat-sand speckle is not blown up.</p>
+  <p class="col"><strong>Slant-range / time-varying-gain correction</strong> is <em>not</em> applied here: a
+  cropped tile has no reliable swath geometry. It belongs on the full transect, where the ping altitude and
+  range scale are known (&sect;10.3). A second fixed-geometry cleanup — masking the <strong>nadir gap</strong>,
+  the dead band directly under the fish where <code>G → 0</code> — is a cheap way to drop a known
+  false-positive region (after SW-Net) and is on the roadmap (&sect;14).</p>
+  <div class="callout warn">
+    <h4>What the ablation showed</h4>
+    <p style="margin:6px 0 0">With strong training-time augmentation, this front-end denoising produced
+    <em>no</em> accuracy change (&sect;08). A CNN with enough augmentation learns an equivalent internal
+    filter. Preprocessing is kept only because CLAHE'd input makes shadows measurably more detectable, which
+    helps Module 2's shadow logic.</p>
+  </div>
+
+  <p class="subhead">Architecture</p>
+  <figure>
+    <div class="fig-t">Module 0 — preprocessing flow (train &amp; serve, identical)</div>
+    <svg viewBox="0 0 900 200" role="img" aria-label="A grayscale tile enters. Slant-range correction is skipped for tiles. Lee filter, a 7 by 7 window MMSE update whose weight goes to zero on flat seabed and to one on edges. Then CLAHE, clip limit 3, 8 by 8 tiles. Output is a native-resolution filtered tile that goes to training and to the model at serve time via despeckle_clahe.">
+      <defs><marker id="m0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <g font-size="11">
+        <rect x="14" y="60" width="120" height="60" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="74" y="84" text-anchor="middle" class="l1">grayscale tile</text><text x="74" y="100" text-anchor="middle" class="l3 m">native px</text>
+        <rect x="168" y="60" width="150" height="60" rx="7" fill="var(--surface-3)" stroke="var(--rule)" stroke-dasharray="4 3"/><text x="243" y="80" text-anchor="middle" class="l2">slant-range / TVG</text><text x="243" y="96" text-anchor="middle" class="l3">skipped for tiles →</text><text x="243" y="110" text-anchor="middle" class="l3">runs on transects (§10.3)</text>
+        <rect x="352" y="52" width="160" height="76" rx="7" fill="var(--good-soft)" stroke="var(--good)"/><text x="432" y="72" text-anchor="middle" class="l1">Lee filter</text><text x="432" y="88" text-anchor="middle" class="l3 m">7×7 MMSE, weight W</text><text x="432" y="103" text-anchor="middle" class="l3">flat: W→0 · edge: W→1</text>
+        <rect x="546" y="52" width="150" height="76" rx="7" fill="var(--good-soft)" stroke="var(--good)"/><text x="621" y="72" text-anchor="middle" class="l1">CLAHE</text><text x="621" y="88" text-anchor="middle" class="l3 m">clip 3.0 · 8×8 tiles</text><text x="621" y="103" text-anchor="middle" class="l3">local gain, capped</text>
+        <rect x="730" y="60" width="156" height="60" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="808" y="80" text-anchor="middle" class="l1">filtered tile</text><text x="808" y="96" text-anchor="middle" class="l3 m">→ train + serve</text><text x="808" y="110" text-anchor="middle" class="l3">despeckle_clahe()</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.4" fill="none">
+        <line x1="134" y1="90" x2="166" y2="90" marker-end="url(#m0)"/>
+        <line x1="318" y1="90" x2="350" y2="90" marker-end="url(#m0)"/>
+        <line x1="512" y1="90" x2="544" y2="90" marker-end="url(#m0)"/>
+        <line x1="696" y1="90" x2="728" y2="90" marker-end="url(#m0)"/>
+      </g>
+      <text x="14" y="164" class="l3">code: ml/scripts/preprocess_sonar.py (functions) · preprocess_splits.py (batch, in place) · ml/inference/preprocess.despeckle_clahe (serve)</text>
+    </svg>
+    <figcaption>The same <code>despeckle_clahe</code> function preprocesses the training set and every
+    serve-time input, so train and inference distributions match exactly.</figcaption>
+  </figure>
+
+  <!-- ---------- MODULE 1 ---------- -->
+  <div class="modbar"><span class="num">1</span><div><div class="t">Detection</div><div class="s">a box + class + score for every man-made object in a tile</div></div></div>
+
+  <p class="subhead">Theory</p>
+  <p class="col"><strong>Transfer learning.</strong> Training a detector from scratch needs millions of
+  images. Instead we start from <strong>COCO-pretrained weights</strong> &mdash; the early convolutional
+  filters already encode edges, gradients and part/whole composition, which transfer to any imagery. Fine-
+  tuning re-specialises the later layers on sonar. This is why ~4,900 tiles is enough. Cross-domain
+  pretraining on unrelated natural imagery is established practice for small SSS datasets — four
+  independent studies (&sect;12) show it beats training from scratch, which plateaus near 80&nbsp;%
+  accuracy, and it stabilises convergence. We start from COCO rather than a sonar corpus like
+  SeabedObjects-KLSG, which Du et al. 2023 found transfers <em>worse</em> than generic ImageNet because
+  its object types don't match the target.</p>
+  <p class="col"><strong>YOLOv8 structure.</strong> Three parts:</p>
+  <ul class="clean col">
+    <li><strong>Backbone</strong> — a CSP-Darknet convolutional stack; extracts feature maps at strides 8, 16 and 32 (fine → coarse).</li>
+    <li><strong>Neck</strong> — a PAN-FPN that fuses those three scales top-down and bottom-up, so a small cylinder and a swath-spanning pipeline both survive to the head.</li>
+    <li><strong>Head</strong> — <em>decoupled</em> (separate box and class branches) and <strong>anchor-free</strong>: it predicts each box edge directly as a probability distribution over positions (Distribution Focal Loss), rather than nudging pre-set anchor boxes.</li>
+  </ul>
+  <p class="col">Across the three scales there are ~8,400 candidate cells. Each predicts a box (4 numbers via
+  DFL) and <strong>one independent sigmoid per class</strong> &mdash; multi-label, not a softmax, so a box
+  can legitimately score on two classes. Training minimises <strong>CIoU</strong> (box position, size,
+  aspect), <strong>BCE</strong> (class), and <strong>DFL</strong> (sharpen the edge distribution). At
+  inference, a confidence floor plus <strong>non-maximum suppression</strong> (greedy suppression of
+  overlapping same-class boxes above an IoU threshold) reduce the 8,400 to a handful.</p>
+  <p class="col"><strong>Why the &ldquo;small&rdquo; variant:</strong> 11.8 M parameters / 28 GFLOPs fits a
+  6 GB GPU at batch 16, exports cleanly, and has enough feature-map depth to catch faint acoustic gradients
+  that the nano variant loses. <strong>SSS adaptations:</strong> colour augmentation off (single channel);
+  vertical flip off (it would swap the highlight&rarr;shadow polarity the model must learn).</p>
+  <p class="col"><strong>Two known weak spots, both on the roadmap (&sect;14).</strong> CIoU degrades on
+  extreme-aspect boxes (our pipelines) and on low-quality labels (our mask-derived shipwreck boxes) &mdash;
+  the <strong>WIoU&nbsp;v3</strong> loss is the published mitigation (Jiang et al. 2024), at zero inference
+  cost. And in a multi-class model a dominant class with distinctive features can <em>suppress</em>
+  accuracy on feature-dissimilar classes (Du et al. 2025, &sect;12) &mdash; the reason we cap every class
+  per split rather than let pipeline volume dominate.</p>
+
+  <p class="subhead">Architecture</p>
+  <figure>
+    <div class="fig-t">Module 1 — YOLOv8s detector</div>
+    <svg viewBox="0 0 900 230" role="img" aria-label="A 640 by 640 preprocessed tile enters the backbone, producing feature maps at strides 8, 16 and 32. The neck, a PAN-FPN, fuses the three scales. The decoupled anchor-free head predicts a box and five class scores at every cell across the three scales, about 8400 raw candidates. A confidence floor then non-maximum suppression yields the final boxes with class and raw score.">
+      <defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <g font-size="11">
+        <rect x="12" y="86" width="110" height="58" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="67" y="110" text-anchor="middle" class="l1">tile</text><text x="67" y="126" text-anchor="middle" class="l3 m">640×640</text>
+        <rect x="142" y="60" width="150" height="110" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="217" y="82" text-anchor="middle" class="l1">backbone</text><text x="217" y="100" text-anchor="middle" class="l3 m">CSP-Darknet</text><text x="217" y="118" text-anchor="middle" class="l3">stride 8 / 16 / 32</text><text x="217" y="136" text-anchor="middle" class="l3">edges → shapes → objects</text>
+        <rect x="312" y="60" width="150" height="110" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="387" y="82" text-anchor="middle" class="l1">neck</text><text x="387" y="100" text-anchor="middle" class="l3 m">PAN-FPN</text><text x="387" y="118" text-anchor="middle" class="l3">fuse the 3 scales</text><text x="387" y="136" text-anchor="middle" class="l3">small + large both survive</text>
+        <rect x="482" y="60" width="160" height="110" rx="7" fill="var(--good-soft)" stroke="var(--good)"/><text x="562" y="82" text-anchor="middle" class="l1">head</text><text x="562" y="100" text-anchor="middle" class="l3 m">decoupled · anchor-free</text><text x="562" y="118" text-anchor="middle" class="l3">per cell: box (DFL)</text><text x="562" y="136" text-anchor="middle" class="l3">+ 5 sigmoid class scores</text>
+        <rect x="662" y="86" width="110" height="58" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/><text x="717" y="108" text-anchor="middle" class="l1">~8,400 raw</text><text x="717" y="124" text-anchor="middle" class="l3 m">candidates</text>
+        <rect x="792" y="86" width="96" height="58" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/><text x="840" y="104" text-anchor="middle" class="l1">conf + NMS</text><text x="840" y="120" text-anchor="middle" class="l3">→ boxes</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.4" fill="none">
+        <line x1="122" y1="115" x2="140" y2="115" marker-end="url(#m1)"/>
+        <line x1="292" y1="115" x2="310" y2="115" marker-end="url(#m1)"/>
+        <line x1="462" y1="115" x2="480" y2="115" marker-end="url(#m1)"/>
+        <line x1="642" y1="115" x2="660" y2="115" marker-end="url(#m1)"/>
+        <line x1="772" y1="115" x2="790" y2="115" marker-end="url(#m1)"/>
+      </g>
+      <text x="12" y="196" class="l3">output per detection: { class_label, confidence_raw, bbox [x1,y1,x2,y2] } &nbsp;·&nbsp; 11.8 M params · 28 GFLOPs · 3.8 ms/frame (GPU)</text>
+      <text x="12" y="214" class="l3">code: ml/scripts/train_yolo_seg.py (train) · ml/inference/detector.py (serve) · edge/edge_infer.py (torch-free)</text>
+    </svg>
+    <figcaption>Loss during training = CIoU + BCE + DFL, summed. The optimizer only ever sees that one
+    number.</figcaption>
+  </figure>
+
+  <!-- ---------- MODULE 2 ---------- -->
+  <div class="modbar"><span class="num">2</span><div><div class="t">Confidence &amp; noise filtering</div><div class="s">cut false alarms, and turn the raw score into an honest 0–100 %</div></div></div>
+
+  <p class="subhead">Theory &amp; physics</p>
+  <p class="col"><strong>Calibration.</strong> A network's raw sigmoid output is a score, not a probability
+  &mdash; a &ldquo;0.8&rdquo; is not right 80 % of the time. <strong>Platt scaling</strong> fits a one-
+  parameter logistic on held-out (score, correct/incorrect) pairs:</p>
+  <div class="formula col"><span class="lbl">Platt scaling</span>P(correct | s) = 1 / ( 1 + exp( a·s + b ) ) &nbsp;&nbsp;&nbsp; a, b fit on the validation split</div>
+  <p class="col">We fit <strong>one calibrator per class</strong>, because the score&harr;accuracy relation
+  differs sharply: a pipeline detection at raw 0.30 is ~61 % likely correct, a crab-pot at raw 0.80 only
+  ~30 %. Quality is the <strong>Expected Calibration Error</strong> &mdash; bin the calibrated scores, and
+  average the gap between predicted confidence and observed accuracy per bin:</p>
+  <div class="formula col"><span class="lbl">ECE</span>ECE = Σ<sub>bins</sub> ( n<sub>b</sub> / N ) · | accuracy<sub>b</sub> − confidence<sub>b</sub> | &nbsp;&nbsp;→ &nbsp; 0.052 raw &rarr; 0.037 calibrated</div>
+  <p class="col"><strong>Per-class gate.</strong> Empirically the false positives of shipwreck and cylinder
+  sit far below their true positives in raw score (mean FP ≈ 0.08 vs mean TP ≈ 0.5). A class-specific
+  cut-off (pipeline 0.25, shipwreck / cylinder 0.40) removes most false alarms at a small recall cost.</p>
+  <p class="col"><strong>Shadow-geometry check &mdash; the physics.</strong> A raised object of height
+  <code>h</code> on a flat seabed, insonified from a sensor at altitude <code>H</code> and slant range
+  <code>R</code> (so ground range <code>G = √(R² − H²)</code>), blocks the beam behind it. By similar
+  triangles the geometric shadow length is</p>
+  <div class="formula col"><span class="lbl">expected acoustic-shadow length</span>L = h · G / ( H − h ) &nbsp;&nbsp;&nbsp; ( with G = √(R² − H²) )</div>
+  <p class="col">A real raised object's measured shadow matches <code>L</code>. A rock cluster returns
+  strongly but sits nearly flush (small effective <code>h</code>), so its predicted <code>L</code> is tiny
+  &mdash; a large or absent measured shadow is <em>geometrically inconsistent</em> and the detection is
+  demoted. This needs per-ping <code>H</code> and <code>R</code>, which Module 3 supplies. On cropped tiles
+  with one assumed geometry the check can't discriminate (measured &sect;08), so it is
+  <strong>opt-in</strong>, active only on full transects.</p>
+  <p class="col"><strong>Temporal persistence (planned, &sect;14).</strong> On a full transect the overlapping
+  tiles see each object several times; requiring a detection to recur across &ge;&nbsp;K overlapping windows
+  removes one-off false positives (after GhostVision). The window size is set by a coarse-graining sweep
+  &mdash; binning detections at doubling scales and finding where real objects cluster (after Cuff et al.,
+  &sect;12).</p>
+
+  <p class="subhead">Architecture</p>
+  <figure>
+    <div class="fig-t">Module 2 — confidence pipeline</div>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Raw detections enter. Stage 1, per-class raw-score gate drops detections below a class threshold. Stage 2, per-class Platt calibration maps the survivors to a 0 to 1 probability. Stage 3, only on full transects, a shadow-geometry check estimates object height from the highlight, computes the expected shadow length h times G over H minus h, compares to the measured dark region, and demotes inconsistent detections. The score becomes 0 to 100 percent and is bucketed into dropped, pending review or auto confirmed.">
+      <defs><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <g font-size="11">
+        <rect x="12" y="40" width="104" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="64" y="62" text-anchor="middle" class="l1">raw dets</text><text x="64" y="78" text-anchor="middle" class="l3 m">+ raw score</text>
+        <rect x="140" y="34" width="140" height="64" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="210" y="54" text-anchor="middle" class="l1">1 · per-class gate</text><text x="210" y="70" text-anchor="middle" class="l3 m">pipe .25 · wreck/cyl .40</text><text x="210" y="85" text-anchor="middle" class="l3">FPs sit below → dropped</text>
+        <rect x="304" y="34" width="150" height="64" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="379" y="54" text-anchor="middle" class="l1">2 · calibrate</text><text x="379" y="70" text-anchor="middle" class="l3 m">per-class Platt 1/(1+e^(as+b))</text><text x="379" y="85" text-anchor="middle" class="l3">ECE 0.052 → 0.037</text>
+        <rect x="478" y="26" width="180" height="80" rx="7" fill="var(--good-soft)" stroke="var(--good)"/><text x="568" y="46" text-anchor="middle" class="l1">3 · shadow check</text><text x="568" y="62" text-anchor="middle" class="l3 m">L = h·G/(H−h)</text><text x="568" y="77" text-anchor="middle" class="l3">measured vs expected</text><text x="568" y="92" text-anchor="middle" class="l3">opt-in · transects only</text>
+        <rect x="682" y="40" width="120" height="52" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/><text x="742" y="62" text-anchor="middle" class="l1">0–100 %</text><text x="742" y="78" text-anchor="middle" class="l3 m">confidence_score</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.4" fill="none">
+        <line x1="116" y1="66" x2="138" y2="66" marker-end="url(#m2)"/>
+        <line x1="280" y1="66" x2="302" y2="66" marker-end="url(#m2)"/>
+        <line x1="454" y1="66" x2="476" y2="66" marker-end="url(#m2)"/>
+        <line x1="658" y1="66" x2="680" y2="66" marker-end="url(#m2)"/>
+      </g>
+      <g font-size="10.5">
+        <text x="742" y="126" text-anchor="middle" class="l2">review bands (schema.py)</text>
+        <rect x="612" y="136" width="120" height="26" rx="5" fill="var(--crit-soft)" stroke="var(--crit)"/><text x="672" y="153" text-anchor="middle" class="l2">&lt; 30 % dropped</text>
+        <rect x="612" y="168" width="120" height="26" rx="5" fill="var(--warn-soft)" stroke="var(--warn)"/><text x="672" y="185" text-anchor="middle" class="l2">30–80 % review</text>
+        <rect x="612" y="200" width="120" height="26" rx="5" fill="var(--good-soft)" stroke="var(--good)"/><text x="672" y="217" text-anchor="middle" class="l2">≥ 80 % auto</text>
+        <path d="M742 92 V132" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#m2)"/>
+      </g>
+      <text x="12" y="152" class="l3">code: ml/inference/confidence_filter.py · shadow_verification.py</text>
+      <text x="12" y="170" class="l3">calibrators: ml/scripts/calibrate_confidence.py → calibrator.pkl {per_class}</text>
+      <text x="12" y="188" class="l3">the shadow check consumes altitude H + slant range R from Module 3</text>
+    </svg>
+    <figcaption>Stages 1–2 always run; stage 3 runs only when real per-ping geometry is available. The
+    displayed % is the calibrated probability, not the raw score.</figcaption>
+  </figure>
+
+  <!-- ---------- MODULE 3 ---------- -->
+  <div class="modbar"><span class="num">3</span><div><div class="t">Reporting &amp; geotagging</div><div class="s">turn a detection's pixel into a latitude, a longitude, a size in metres</div></div></div>
+
+  <p class="subhead">Theory &amp; physics</p>
+  <p class="col"><strong>How a side-scan image is built.</strong> The tow-fish moves along a track. Each
+  <strong>ping</strong> is a cross-track line: the return is sampled in <strong>slant range</strong> &mdash;
+  round-trip travel time × sound speed ÷ 2. Directly below the fish (nadir) the slant range equals the
+  altitude; the image column encodes increasing slant range outward. The image row is the ping index, i.e.
+  along-track position / time.</p>
+  <p class="col"><strong>Slant range → ground range.</strong> Assuming a flat seabed, an object seen at slant
+  range <code>R</code> from a sensor at altitude <code>H</code> lies a horizontal distance</p>
+  <div class="formula col"><span class="lbl">flat-bottom slant-to-ground</span>G = √( R² − H² ) &nbsp;&nbsp;&nbsp; (near nadir G → 0, the "nadir gap"; at far range G → R)</div>
+  <p class="col"><strong>Along-track fix.</strong> Image row → ping number → the navigation record's
+  timestamp → interpolate the <strong>(latitude, longitude, heading)</strong> logged for that instant
+  (heading interpolated the short way around the circle).</p>
+  <p class="col"><strong>Across-track placement.</strong> The target is <code>G</code> metres from the track,
+  <em>perpendicular</em> to the heading: bearing = heading − 90° for the port channel (left), + 90° for
+  starboard (right). Then a <strong>geodesic forward step</strong> &mdash; from (lat, lon), move
+  <code>G</code> metres along that bearing on a spherical Earth &mdash; gives the target coordinate (exact
+  enough for the sub-kilometre offsets in side-scan). Box width and height convert to metres with the same
+  across-track scale. This formulation follows the published side-scan ATR localisation maths of
+  Yu et al. (2021, &sect;12); our additions are the header-only XTF parser and the &lt;1&nbsp;m validation
+  below.</p>
+  <div class="callout good">
+    <h4>Validation</h4>
+    <p style="margin:6px 0 0">On the AURORA survey, position recovered from the XTF ping headers agrees with
+    the independently recorded <code>navigation.csv</code> at the same timestamp to <strong>latitude
+    Δ ≈ 0.3 m, longitude Δ &lt; 0.1 m, heading Δ 0.0°</strong>. Six unit tests pin the projection maths.</p>
+  </div>
+
+  <p class="subhead">Architecture</p>
+  <figure>
+    <div class="fig-t">Module 3 — acquisition geometry (left) and the projection flow (right)</div>
+    <svg viewBox="0 0 900 260" role="img" aria-label="Left: a range view. The tow-fish sits at altitude H above the seabed. A beam at slant range R reaches an object; the ground range G equals the square root of R squared minus H squared, with a nadir gap directly below. Right: the flow. Navigation CSV or XTF ping headers build a navigation table and a ping index. Per detection: image row picks the ping and the tow-fish latitude, longitude and heading; image column gives slant range then ground range; a geodesic offset perpendicular to the heading gives the target latitude and longitude plus size in metres, written as a report record in JSON, CSV and GeoJSON.">
+      <!-- left: geometry -->
+      <text x="20" y="24" class="l2" font-weight="600">range view</text>
+      <line x1="20" y1="200" x2="330" y2="200" stroke="var(--ink-2)" stroke-width="2"/><text x="24" y="216" class="l3">seabed</text>
+      <circle cx="60" cy="70" r="6" fill="var(--accent)"/><text x="60" y="58" text-anchor="middle" class="l3">tow-fish</text>
+      <line x1="60" y1="70" x2="60" y2="200" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/><text x="52" y="140" text-anchor="end" class="l2">H</text>
+      <line x1="60" y1="70" x2="250" y2="196" stroke="var(--accent)" stroke-width="1.6"/><text x="150" y="118" class="l3" transform="rotate(29 150 118)">slant range R</text>
+      <rect x="245" y="182" width="12" height="18" fill="var(--ink)"/>
+      <line x1="60" y1="200" x2="250" y2="200" stroke="var(--good)" stroke-width="3"/><text x="150" y="234" text-anchor="middle" class="l2" fill="var(--good)">ground range G = √(R² − H²)</text>
+      <path d="M60 200 q6 -6 12 0" fill="none" stroke="var(--muted)"/><text x="78" y="196" class="l3">nadir gap</text>
+      <!-- right: flow -->
+      <line x1="360" y1="12" x2="360" y2="248" stroke="var(--rule)"/>
+      <text x="384" y="24" class="l2" font-weight="600">projection flow</text>
+      <defs><marker id="m3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <g font-size="10.5">
+        <rect x="384" y="40" width="150" height="44" rx="6" fill="var(--surface-2)" stroke="var(--rule-strong)"/><text x="459" y="58" text-anchor="middle" class="l1">nav.csv / XTF headers</text><text x="459" y="74" text-anchor="middle" class="l3 m">NavigationTable · PingIndex</text>
+        <rect x="384" y="104" width="150" height="44" rx="6" fill="var(--surface-2)" stroke="var(--rule)"/><text x="459" y="122" text-anchor="middle" class="l2">row → ping → fish</text><text x="459" y="137" text-anchor="middle" class="l3 m">lat, lon, heading</text>
+        <rect x="384" y="168" width="150" height="44" rx="6" fill="var(--surface-2)" stroke="var(--rule)"/><text x="459" y="186" text-anchor="middle" class="l2">col → R → G</text><text x="459" y="201" text-anchor="middle" class="l3 m">√(R² − H²)</text>
+        <rect x="560" y="104" width="150" height="108" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="635" y="126" text-anchor="middle" class="l1">geodesic offset</text><text x="635" y="142" text-anchor="middle" class="l3 m">G metres ⟂ heading</text><text x="635" y="158" text-anchor="middle" class="l3">(port −90° / stbd +90°)</text><text x="635" y="178" text-anchor="middle" class="l2">→ (lat, lon)</text><text x="635" y="194" text-anchor="middle" class="l3">+ size_m</text>
+        <rect x="736" y="120" width="150" height="76" rx="7" fill="var(--good-soft)" stroke="var(--good)"/><text x="811" y="142" text-anchor="middle" class="l1">report record</text><text x="811" y="158" text-anchor="middle" class="l3 m">JSON · CSV · GeoJSON</text><text x="811" y="174" text-anchor="middle" class="l3">ping_id audit pointer</text>
+        <path d="M459 84 V102" stroke="currentColor" stroke-width="1.2" marker-end="url(#m3)"/>
+        <path d="M534 126 H558" stroke="currentColor" stroke-width="1.2" marker-end="url(#m3)"/>
+        <path d="M534 190 H548 V160 H558" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#m3)"/>
+        <path d="M710 158 H734" stroke="currentColor" stroke-width="1.2" marker-end="url(#m3)"/>
+      </g>
+    </svg>
+    <figcaption>Module 3 is model-agnostic — it never changed across the three runs. Code:
+    <code>backend/geotagging/*</code> and <code>backend/reporting/*</code>.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================== 11  SYSTEM ============================== -->
+<section id="p11">
+  <h2><span class="h2n">11</span>The complete system</h2>
+  <p class="col">All four modules, both runtimes, and the human review loop. Modules 0–3 are functional and
+  chained into one call; Module 4 is scaffolded on mock data.</p>
+
+  <figure>
+    <div class="fig-t">DRISHTI — end-to-end architecture</div>
+    <svg viewBox="0 0 900 470" role="img" aria-label="Full architecture. A raw sonar log (XTF, TIF, navigation) is tiled. Each tile goes through Module 0 preprocessing (Lee and CLAHE), Module 1 detection (YOLOv8s, four classes), and Module 2 confidence and noise (per-class gate, per-class calibration, opt-in shadow check using altitude and range from Module 3). Module 3 geotags each detection to latitude and longitude and writes the JSON, CSV and GeoJSON report with a review status. Two runtimes share the same code: a server path using PyTorch and the Django API, and a torch-free edge path using onnxruntime for the AUV or Jetson. Module 4, the dashboard, uploads the log, renders the GeoJSON on a Leaflet map, and hosts the review queue where an analyst confirms or rejects pending detections; confirmations feed back as labels for fine-tuning.">
+      <defs><marker id="sy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+        <marker id="syd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>
+
+      <!-- ingest -->
+      <rect x="14" y="30" width="130" height="60" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+      <text x="79" y="52" text-anchor="middle" class="l1">raw sonar log</text>
+      <text x="79" y="68" text-anchor="middle" class="l3 m">XTF · TIF · nav</text>
+      <text x="79" y="82" text-anchor="middle" class="l3">→ tiled</text>
+
+      <!-- module chain -->
+      <rect x="176" y="24" width="120" height="72" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="236" y="44" text-anchor="middle" class="l1">M0 Preprocess</text>
+      <text x="236" y="60" text-anchor="middle" class="l3 m">Lee · CLAHE</text>
+      <text x="236" y="76" text-anchor="middle" class="l3">edge-aware despeckle</text>
+
+      <rect x="328" y="24" width="120" height="72" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="388" y="44" text-anchor="middle" class="l1">M1 Detect</text>
+      <text x="388" y="60" text-anchor="middle" class="l3 m">YOLOv8s · nc=4</text>
+      <text x="388" y="76" text-anchor="middle" class="l3">box + class + score</text>
+
+      <rect x="480" y="16" width="150" height="88" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="555" y="36" text-anchor="middle" class="l1">M2 Confidence</text>
+      <text x="555" y="52" text-anchor="middle" class="l3 m">per-class gate</text>
+      <text x="555" y="66" text-anchor="middle" class="l3 m">per-class calibrate</text>
+      <text x="555" y="80" text-anchor="middle" class="l3">shadow check (opt-in)</text>
+      <text x="555" y="95" text-anchor="middle" class="l3">→ 0–100 %</text>
+
+      <rect x="662" y="24" width="130" height="72" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="727" y="44" text-anchor="middle" class="l1">M3 Geotag</text>
+      <text x="727" y="60" text-anchor="middle" class="l3 m">px → lat/lon</text>
+      <text x="727" y="76" text-anchor="middle" class="l3">JSON·CSV·GeoJSON</text>
+
+      <g stroke="currentColor" stroke-width="1.5" fill="none">
+        <line x1="144" y1="60" x2="174" y2="60" marker-end="url(#sy)"/>
+        <line x1="296" y1="60" x2="326" y2="60" marker-end="url(#sy)"/>
+        <line x1="448" y1="60" x2="478" y2="60" marker-end="url(#sy)"/>
+        <line x1="630" y1="60" x2="660" y2="60" marker-end="url(#sy)"/>
+      </g>
+      <!-- M3 feeds geometry back to M2 -->
+      <path d="M690 96 C 650 128 600 118 566 106" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#syd)"/>
+      <text x="612" y="132" class="l3" fill="var(--accent)">altitude H + slant range R</text>
+
+      <!-- two runtimes -->
+      <text x="176" y="150" class="l2" font-weight="600">one codebase, two runtimes</text>
+      <rect x="176" y="160" width="300" height="66" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/>
+      <text x="326" y="182" text-anchor="middle" class="l1">server path</text>
+      <text x="326" y="198" text-anchor="middle" class="l3 m">PyTorch · Django REST + Celery + WebSocket</text>
+      <text x="326" y="213" text-anchor="middle" class="l3">→ PostgreSQL</text>
+      <rect x="492" y="160" width="300" height="66" rx="7" fill="var(--surface-2)" stroke="var(--accent)"/>
+      <text x="642" y="182" text-anchor="middle" class="l1">edge path (AUV / Jetson)</text>
+      <text x="642" y="198" text-anchor="middle" class="l3 m">onnxruntime + numpy + opencv · no torch</text>
+      <text x="642" y="213" text-anchor="middle" class="l3">FP32 ONNX 45 MB · ~90 ms/tile CPU · FP16 for Jetson</text>
+      <path d="M400 96 V150 M400 150 H326 V158" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#sy)"/>
+      <path d="M420 96 C 470 130 560 140 642 158" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#sy)"/>
+
+      <!-- report -->
+      <rect x="662" y="250" width="130" height="56" rx="7" fill="var(--surface-3)" stroke="var(--rule)"/>
+      <text x="727" y="272" text-anchor="middle" class="l1">report</text>
+      <text x="727" y="288" text-anchor="middle" class="l3 m">records + audit ref</text>
+      <path d="M727 96 V248" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#sy)"/>
+
+      <!-- Module 4 -->
+      <text x="176" y="262" class="l2" font-weight="600">Module 4 — dashboard <tspan class="l3">(scaffold · mock data)</tspan></text>
+      <rect x="176" y="274" width="150" height="60" rx="7" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="251" y="296" text-anchor="middle" class="l1">upload log</text>
+      <text x="251" y="312" text-anchor="middle" class="l3">run the pipeline</text>
+      <rect x="342" y="274" width="150" height="60" rx="7" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="417" y="296" text-anchor="middle" class="l1">Leaflet map</text>
+      <text x="417" y="312" text-anchor="middle" class="l3">render GeoJSON pins</text>
+      <rect x="508" y="274" width="150" height="60" rx="7" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="583" y="296" text-anchor="middle" class="l1">review queue</text>
+      <text x="583" y="312" text-anchor="middle" class="l3">confirm / reject</text>
+      <path d="M654 278 C 690 270 720 290 726 306" fill="none" stroke="currentColor" stroke-width="1.3" marker-end="url(#sy)"/>
+      <path d="M326 304 H340" stroke="currentColor" stroke-width="1.3" marker-end="url(#sy)"/>
+      <path d="M492 304 H506" stroke="currentColor" stroke-width="1.3" marker-end="url(#sy)"/>
+
+      <!-- review bands + feedback -->
+      <rect x="176" y="360" width="482" height="46" rx="7" fill="var(--surface-2)" stroke="var(--rule)"/>
+      <text x="192" y="380" class="l2">review_status:</text>
+      <text x="300" y="380" class="l3" fill="var(--crit)">&lt;30 % dropped</text>
+      <text x="410" y="380" class="l3" fill="var(--warn)">30–80 % pending_review</text>
+      <text x="560" y="380" class="l3" fill="var(--good)">≥80 % auto_confirmed</text>
+      <text x="192" y="398" class="l3">analyst_confirmed / analyst_rejected on review → labels for the next fine-tune ↺</text>
+      <path d="M583 334 V358" stroke="currentColor" stroke-width="1.3" marker-end="url(#sy)"/>
+      <path d="M176 383 C 120 383 120 60 174 60" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#sy)"/>
+      <text x="86" y="230" class="l3" transform="rotate(-90 86 230)">confirmed labels → fine-tune</text>
+
+      <text x="14" y="440" class="l3">chained in one call: ml/inference/pipeline.py &nbsp;·&nbsp; full transect: ml/scripts/run_aurora_survey.py</text>
+      <text x="14" y="456" class="l3">M0–M3 functional · M4 scaffold · end-to-end on a real AURORA transect in ~8 s</text>
+    </svg>
+    <figcaption>The server and edge paths execute the <em>same</em> Module 0/2/3 code; only Module 1's
+    runtime differs (PyTorch vs onnxruntime). Module 4 closes the loop — analyst confirmations become
+    training labels for cross-survey fine-tuning.</figcaption>
+  </figure>
+
+  <h3>Module-by-module status</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Module</th><th>State</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>0 — Preprocess</td><td><span class="pill good">live</span></td><td>Lee + CLAHE, train and serve identical; ablation showed no accuracy effect, kept for the shadow signal</td></tr>
+        <tr><td>1 — Detect</td><td><span class="pill good">shipped</span></td><td>pipeline AP50 0.98 · shipwreck/cylinder P 0.70–0.76 at a working threshold · ghost_net synthetic · crab_pot filtered · FP32 ONNX for the edge</td></tr>
+        <tr><td>2 — Confidence &amp; noise</td><td><span class="pill accent">functional</span></td><td>per-class gate cuts FPs · per-class calibration ECE 0.052 → 0.037 · shadow check opt-in for transects</td></tr>
+        <tr><td>3 — Geotag &amp; report</td><td><span class="pill good">done</span></td><td>position &lt; 1 m vs recorded nav · JSON + CSV + GeoJSON · 6 unit tests</td></tr>
+        <tr><td>4 — Dashboard</td><td><span class="pill warn">scaffold</span></td><td>React + Leaflet + ReviewQueue on mock data — not wired to the live API</td></tr>
+        <tr><td>End-to-end</td><td><span class="pill good">runs</span></td><td>AURORA transect → geotagged report in ~8 s</td></tr>
+        <tr><td>Cross-survey transfer</td><td><span class="pill crit">needs fine-tuning</span></td><td>near-zero detections on an unseen instrument/seabed</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== 12  RELATED WORK ============================== -->
+<section id="p_lit">
+  <h2><span class="h2n">12</span>Related work — where DRISHTI sits</h2>
+  <p class="col">Twelve sources were reviewed against DRISHTI: ten peer-reviewed papers, one
+  Microsoft&nbsp;/&nbsp;WWF technical platform, and one internal geolocation design note. They cluster
+  into five groups. The two that matter most both use <strong>AI4Shipwrecks</strong> — the dataset behind
+  our shipwreck class.</p>
+
+  <div class="callout">
+    <h4>The two 2026 AI4Shipwrecks benchmarks — cite as a pair</h4>
+    <p style="margin:6px 0 0"><strong>SW-Net</strong> (segmentation) reaches IoU 0.394 / F1 0.566 and
+    argues the human inter-annotator ceiling on SSS wrecks is only 50–60&nbsp;%. <strong>DFSE-YOLO</strong>
+    (detection — our task) reports a vanilla <strong>YOLOv8 baseline of mAP50 0.716</strong>, best-in-class
+    0.755, at 5.25&nbsp;MB / 40&nbsp;FPS. Together they place DRISHTI's shipwreck performance
+    <em>inside</em> the published state of the art for this dataset.</p>
+  </div>
+
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Source</th><th>Relevance</th><th>What DRISHTI takes</th><th>Tier</th></tr></thead>
+      <tbody>
+        <tr><td>SW-Net <span class="l3">· Sensors 2026</span></td><td>AI4Shipwrecks segmentation SOTA</td><td>annotator-ceiling defence; physics-prior thesis; Type&nbsp;I/II error framing; nadir-gap post-processing</td><td><span class="pill accent">anchor</span></td></tr>
+        <tr><td>DFSE-YOLO <span class="l3">· Sci. Rep. 2026</span></td><td>AI4Shipwrecks <em>detection</em> baseline</td><td>YOLOv8 mAP50 0.716 reference; 50&nbsp;px box-merge preprocessing; selective-enhancement v2 roadmap; INT8-assumption contrast</td><td><span class="pill accent">anchor</span></td></tr>
+        <tr><td>Transformer-YOLOv5 <span class="l3">· Remote Sens. 2021</span></td><td>same architecture family + 4-module ATR pipeline</td><td>published Module&nbsp;3 localisation maths; small-data defence; image-complexity sensitivity method</td><td><span class="pill accent">strong</span></td></tr>
+        <tr><td>GhostVision <span class="l3">· JMSE 2026</span></td><td>crab-pot detection · evaluation methodology</td><td>&ldquo;mAP overstates operational utility&rdquo;; temporal-persistence FP filter; processing-vs-survey-time metric; transect-disjoint split</td><td><span class="pill accent">strong</span></td></tr>
+        <tr><td>GhostNetZero <span class="l3">· Microsoft AI for Good / WWF</span></td><td>ghost-net segmentation + review platform</td><td>Module&nbsp;4 human-in-the-loop is published prior art; synthetic-ghost_net defence; cross-survey transfer-failure cover (IoU 0.74→0.55)</td><td><span class="pill flat">targeted</span></td></tr>
+        <tr><td>Du et al. 2023 <span class="l3">· Remote Sens. — pre-training datasets</span></td><td>SSS transfer-learning study</td><td>independent evidence KLSG is a <em>weak</em> transfer source (below ImageNet); &ldquo;consistency beats volume&rdquo;; on-board compute caveat</td><td><span class="pill flat">targeted</span></td></tr>
+        <tr><td>Qin et al. 2021 <span class="l3">· IEEE Access</span></td><td>small-SSS training strategy</td><td>cross-domain pretraining works (grayscale CIFAR→SSS, 6.5→3.5&nbsp;% error); GAN / synthetic caution; geo-disjoint split</td><td><span class="pill flat">targeted</span></td></tr>
+        <tr><td>Du et al. 2025 <span class="l3">· JMSE — data expansion</span></td><td>small-SSS data strategy</td><td>&ldquo;mutual influence between classes&rdquo; lens for our multi-class model; data-expansion plateaus at ~500–1000 / class</td><td><span class="pill flat">targeted</span></td></tr>
+        <tr><td>Jiang et al. 2024 <span class="l3">· JMSE — Improved YOLOv8 (optical)</span></td><td>YOLOv8 tuning for marine debris</td><td>WIoU&nbsp;v3 zero-cost loss lever for noisy / extreme-aspect labels; Grad-CAM heatmap slide; 2nd source for &ldquo;attention ≈ −30&nbsp;% FPS&rdquo;</td><td><span class="pill warn">minor</span></td></tr>
+        <tr><td>Yu et al. — debris-flow deposits</td><td>geological-feature detection · transfer learning</td><td>staged / progressive transfer idea (COCO → generic-sonar → task); 4th small-SSS transfer citation</td><td><span class="pill warn">minor</span></td></tr>
+        <tr><td>SIH_057 — internal geolocation note</td><td>team design intent for Module&nbsp;3</td><td>completeness checklist; caveats we honour (verify row↔ping from raw metadata; proper CRS; no invented GPS fixes)</td><td><span class="pill warn">minor</span></td></tr>
+        <tr><td>Cuff et al. 2023 — coarse-graining <span class="l3">· fisheries ecology</span></td><td>linear-transect analysis method</td><td>coarse-graining sweep to tune the transect persistence window; measurement-scale (grain / extent) vocabulary</td><td><span class="pill warn">minor</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What the literature settles</h3>
+  <ul class="clean col">
+    <li><strong>Our shipwreck number is at SOTA, not broken.</strong> Single-class YOLO on a clean AI4Shipwrecks split tops out at mAP50 ~0.72–0.76 (DFSE-YOLO), human annotators agree only 50–60&nbsp;% (SW-Net). Our lower figure is a deliberately harder test set (the overlap re-tile 3×'d the shipwreck instances) plus multi-class dilution.</li>
+    <li><strong>COCO→sonar transfer learning is established practice.</strong> Four independent SSS studies (Qin, Du 2023, Du 2025, Yu): from-scratch plateaus ~80&nbsp;%, pretraining adds ~10&nbsp;pts and stabilises convergence. Even grayscale-CIFAR pretraining halves the error.</li>
+    <li><strong>Dropping KLSG was right.</strong> Du et al. 2023 found KLSG a worse pretraining source than generic ImageNet — its object types don't transfer.</li>
+    <li><strong>mAP can mislead.</strong> GhostVision's best-mAP model had 0.6&nbsp;% precision. We report calibrated precision / recall / ECE at the operating point.</li>
+    <li><strong>Cross-survey transfer needs fine-tuning</strong> — documented behaviour (GhostNetZero IoU 0.74→0.55), with the same remedy we propose.</li>
+    <li><strong>Synthetic data has limits.</strong> It helps only when it matches the real feature distribution (Qin), and volume plateaus by ~1000 / class (Du 2025) — no public real ghost-net SSS dataset exists, which is why ours is physically modelled.</li>
+    <li><strong>Heavy attention modules cost ~30&nbsp;% of the frame rate</strong> on YOLOv8 — two independent sources (DFSE-YOLO, Jiang). We take only the zero-cost improvements for an edge target.</li>
+    <li><strong>Our review queue is a proven design</strong> — the human-in-the-loop feedback loop deployed by Microsoft&nbsp;/&nbsp;WWF's GhostNetZero.</li>
+  </ul>
+
+  <h3>Adopted / planned from the literature</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Item</th><th>Source</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Physics-guided verification (shadow geometry) &amp; speckle front-end</td><td>SW-Net</td><td><span class="pill good">in place</span></td></tr>
+        <tr><td>Per-class calibration + operating-point metrics (not just mAP)</td><td>GhostVision</td><td><span class="pill good">in place</span></td></tr>
+        <tr><td>Human-in-the-loop review → fine-tune loop</td><td>GhostNetZero</td><td><span class="pill accent">designed</span></td></tr>
+        <tr><td>50&nbsp;px / 1–2&nbsp;m proximity box-merge for fragmented hulls</td><td>DFSE-YOLO</td><td><span class="pill warn">planned</span></td></tr>
+        <tr><td>Temporal-persistence gate for transect inference + coarse-graining window sweep</td><td>GhostVision · Cuff</td><td><span class="pill warn">planned</span></td></tr>
+        <tr><td>Scenario / complexity sensitivity table; class-confusion &amp; balance analysis</td><td>DFSE-YOLO · TR-YOLOv5 · Du 2025</td><td><span class="pill warn">planned</span></td></tr>
+        <tr><td>WIoU&nbsp;v3 loss retrain; YOLOv8n 4-class size comparison; nadir-gap mask</td><td>Jiang · DFSE-YOLO · SW-Net</td><td><span class="pill warn">planned</span></td></tr>
+        <tr><td>Selective deep-feature enhancement (v2 target 0.755 / 40&nbsp;FPS / 5&nbsp;MB)</td><td>DFSE-YOLO</td><td><span class="pill flat">roadmap</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout good">
+    <h4>Literature posture — one paragraph for the viva</h4>
+    <p style="margin:6px 0 0">We benchmarked DRISHTI against the current side-scan literature. On
+    AI4Shipwrecks the 2026 state of the art is SW-Net (IoU 0.39, segmentation) and DFSE-YOLO (mAP50 0.755
+    detection; vanilla YOLOv8 0.716); human annotators agree only 50–60&nbsp;%. Our shipwreck performance
+    sits in that band. Our confidence module follows GhostVision's finding that mAP overstates operational
+    utility, so we report calibrated precision / recall at the operating point. Our geotagging follows the
+    published Yu&nbsp;et&nbsp;al.&nbsp;(2021) formulation and validates to &lt;1&nbsp;m. Our review queue is
+    the human-in-the-loop design deployed by Microsoft&nbsp;/&nbsp;WWF's GhostNetZero. Cross-domain
+    pretraining is validated by four independent SSS studies; cross-survey transfer needs fine-tuning — a
+    documented field-wide limitation with the same remedy. And INT8 quantization, which the literature
+    assumes transfers cleanly, collapsed faint-target recall in our tests — so we ship FP32 ONNX,
+    torch-free, at ~90&nbsp;ms/tile on CPU.</p>
+  </div>
+</section>
+
+<!-- ============================== 13 ============================== -->
+<section id="p12">
+  <h2><span class="h2n">13</span>How to run it</h2>
+  <pre class="code"><span class="c"># rebuild the dataset (preprocessed)</span>
+python ml/scripts/tile_subpipe.py
+python ml/scripts/tile_ai4shipwrecks.py          <span class="c"># overlap + mask-close</span>
+python ml/scripts/build_dataset.py
+python ml/scripts/build_synthetic_data.py --classes 3 --split train --count 900   <span class="c"># + val/test</span>
+python ml/scripts/build_synthetic_data.py --classes 4 --split train --count 350
+python ml/scripts/preprocess_splits.py            <span class="c"># Module 0 — Lee + CLAHE in place</span>
+
+<span class="c"># train  (resume-safe: ml/scripts/resume_training.py)</span>
+python ml/scripts/train_yolo_seg.py --model yolov8s.pt --epochs 120 --batch 16 --patience 25 --workers 2
+
+<span class="c"># calibrate + evaluate Module 2</span>
+python ml/scripts/calibrate_confidence.py --model ml/models/checkpoints/best_detector.pt --split val
+python ml/scripts/evaluate.py        --model ml/models/checkpoints/best_detector.pt
+python ml/scripts/eval_module2.py    --model ml/models/checkpoints/best_detector.pt --split test
+
+<span class="c"># export for the edge</span>
+python ml/scripts/export_onnx.py --model ml/models/checkpoints/best_detector.pt --benchmark
+python edge/edge_infer.py --image tile.png --no-preprocess     <span class="c"># torch-free path</span>
+uvicorn edge.onnx_runtime_server:app --port 8100               <span class="c"># edge service</span>
+
+<span class="c"># end-to-end on a real transect  (--preprocess is on by default for the shipped model)</span>
+python ml/scripts/run_aurora_survey.py --preprocess
+python -m ml.inference.pipeline --image tile.png --xtf DATA0000106.H-PU.xtf --nav navigation.csv --out report</pre>
+</section>
+
+<!-- ============================== 14 ============================== -->
+<section id="p13">
+  <h2><span class="h2n">14</span>Directions ahead</h2>
+  <ol class="steps col">
+    <li><h4>Module 4 — the dashboard <span class="pill warn" style="margin-left:6px">biggest gap</span></h4>
+      <p>Upload a sonar log, run the pipeline, render <code>report.geojson</code> on a Leaflet map, feed the
+      pending detections into the review queue, offer the JSON/CSV download. It exists as a scaffold on mock
+      data; it is a required PS deliverable.</p></li>
+    <li><h4>Backend wiring</h4>
+      <p>Connect <code>ml/inference/pipeline.py</code> to the Django/Celery task → PostgreSQL → the
+      WebSocket push. The API contract and report schema are fixed.</p></li>
+    <li><h4>The fine-tuning story</h4>
+      <p>The model doesn't transfer across surveys. Deployment answer: fine-tune on a small labelled sample
+      of the operator's own sonar. Build and time that loop — it becomes a pitch strength.</p></li>
+    <li><h4>Shipwreck &amp; cylinder</h4>
+      <p>Still the weak classes at ~0.4–0.45 on their own test sets. More AI4Shipwrecks-style surveys,
+      real-object copy-paste augmentation for cylinders, or accept and document the ceiling.</p></li>
+    <li><h4>Adopt DFSE-YOLO's box-merge, then its selective enhancement <span class="pill flat" style="margin-left:6px">from §12</span></h4>
+      <p>Replace the mask-close in <code>tile_ai4shipwrecks.py</code> with a 50&nbsp;px / 1–2&nbsp;m
+      proximity box-merge (cross-validated F1 0.87 on 14 wrecks) and re-evaluate shipwreck. Longer term,
+      selective deep-feature enhancement (C≥128 layers only) is the code-available path toward ~0.755 mAP50
+      at 40&nbsp;FPS / 5&nbsp;MB.</p></li>
+    <li><h4>Cheap eval upgrades for the deck <span class="pill flat" style="margin-left:6px">from §12</span></h4>
+      <p>Scenario table (low-contrast / reverberation / complex-seabed bins × mAP, after DFSE-YOLO Table&nbsp;3
+      and TR-YOLOv5's Sobel complexity descriptor); confusion matrix + class-balance analysis (Du 2025);
+      Grad-CAM heatmaps over sonar tiles; confirm and report the site-disjoint AI4Shipwrecks split.</p></li>
+    <li><h4>Two zero-risk training experiments <span class="pill flat" style="margin-left:6px">from §12</span></h4>
+      <p>WIoU&nbsp;v3 loss (1-file Ultralytics patch, targets the noisy shipwreck labels); a YOLOv8n
+      4-class export for a size/mAP point against the ~5&nbsp;MB SSS-literature norm. Optionally a staged
+      transfer (KLSG / raw-strip intermediate fine-tune) after Yu et al.</p></li>
+    <li><h4>Untapped real data <span class="pill flat" style="margin-left:6px">from §12</span></h4>
+      <p>Marine-PULSE (Du et al., Zenodo 7922705) — 323 real pipeline/cable SSS images across five
+      instruments — as extra <code>submarine_pipeline</code> data or an in-domain pretraining set.</p></li>
+    <li><h4>Multi-modal fusion (long term) <span class="pill flat" style="margin-left:6px">from §12</span></h4>
+      <p>Bathymetry / magnetometer / multi-frequency channels to cut Type&nbsp;I errors — flagged by both
+      SW-Net and Du et al. 2025 as the next step for seabed-object recognition.</p></li>
+    <li><h4>Prove the shadow check</h4>
+      <p>Wired and unit-tested but no quantified benefit — needs a labelled <em>and</em> geo-referenced
+      transect to measure false-positive reduction on real geometry.</p></li>
+    <li><h4>Tier-1 edge number</h4>
+      <p>Borrow a Jetson, run the FP16 ONNX with the TensorRT execution provider, capture the on-vehicle
+      latency. That's the deployment figure for the deck.</p></li>
+    <li><h4>Close Module 3's approximations</h4>
+      <p>Read the swath range scale from the XTF or TIF georef tags; check the row↔ping mapping on a real
+      TIF; along-track object size needs ping-rate × speed.</p></li>
+  </ol>
+</section>
+
+<!-- ============================== 15 ============================== -->
+<section id="p14">
+  <h2><span class="h2n">15</span>Appendix — files &amp; data provenance</h2>
+
+  <h3>Key scripts</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Path</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ml/scripts/tile_ai4shipwrecks.py · tile_subpipe.py</td><td>overlap-tile the shipwreck / pipeline transects</td></tr>
+        <tr><td class="mono">ml/scripts/build_dataset.py</td><td>assemble all real sources into the splits, per-class caps</td></tr>
+        <tr><td class="mono">ml/scripts/build_synthetic_data.py</td><td>procedural ghost_net (+ cylinder top-up), box labels</td></tr>
+        <tr><td class="mono">ml/scripts/preprocess_sonar.py · preprocess_splits.py</td><td>Module 0 — Lee + CLAHE (functions; batch in place)</td></tr>
+        <tr><td class="mono">ml/scripts/train_yolo_seg.py · resume_training.py</td><td>training with SSS-tuned augmentation; resume from last.pt</td></tr>
+        <tr><td class="mono">ml/scripts/calibrate_confidence.py</td><td>per-class Platt-scaling calibrators (+ global fallback)</td></tr>
+        <tr><td class="mono">ml/scripts/evaluate.py · eval_module2.py · eval_shadow_check.py</td><td>held-out metrics · Module 2 operating points · shadow feasibility</td></tr>
+        <tr><td class="mono">ml/scripts/export_onnx.py</td><td>ONNX export + validate + INT8 quantize + benchmark</td></tr>
+        <tr><td class="mono">ml/inference/detector.py · confidence_filter.py · shadow_verification.py · pipeline.py</td><td>serving wrappers + the end-to-end chain</td></tr>
+        <tr><td class="mono">edge/edge_infer.py · onnx_runtime_server.py · benchmark.py · eval_edge_onnx.py · Dockerfile.edge</td><td>torch-free edge inference, FastAPI service, benchmarks, container</td></tr>
+        <tr><td class="mono">backend/geotagging/* · backend/reporting/*</td><td>XTF/nav parsing, projection, report schema + exporters</td></tr>
+        <tr><td class="mono">ml/scripts/run_aurora_survey.py</td><td>tile a full transect + run the whole pipeline</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Models</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>File</th><th>What</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ml/models/checkpoints/best_detector.pt</td><td>shipped — preprocessed Run 3 YOLOv8s</td></tr>
+        <tr><td class="mono">best_detector_raw.pt · best_detector_prep.pt</td><td>Run 2 (raw) and Run 3 (preprocessed) backups</td></tr>
+        <tr><td class="mono">ml/models/exported/best_detector.onnx</td><td>FP32 ONNX — the edge deployment model (44.8 MB)</td></tr>
+        <tr><td class="mono">best_detector_fp16.onnx · best_detector_int8.onnx</td><td>FP16 (Jetson target) · INT8 (excluded — accuracy collapse)</td></tr>
+        <tr><td class="mono">ml/models/exported/calibrator.pkl</td><td>per-class Platt calibrators</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Datasets used</h3>
+  <div class="tbl col">
+    <table>
+      <thead><tr><th>Dataset</th><th>Provides</th></tr></thead>
+      <tbody>
+        <tr><td>HuggingFace SSS crab-pot</td><td>crab_pot (real, box)</td></tr>
+        <tr><td>SubPipeMini2</td><td>submarine_pipeline (real survey strips, box)</td></tr>
+        <tr><td>AI4Shipwrecks</td><td>shipwreck (real transects, pixel masks → boxes); segmentation-roadmap benchmark</td></tr>
+        <tr><td>Roboflow side-scan-sonar</td><td>shipwreck (Ship + Plane, real, box)</td></tr>
+        <tr><td>Kaggle sonar-mine</td><td>mine_cylinder (MILCO + NonMILCO contacts)</td></tr>
+        <tr><td>AURORA (JC125/M87)</td><td>real navigation + XTF for Module 3 validation (no target labels)</td></tr>
+        <tr><td>SeabedObjects-KLSG</td><td>tried as weak shipwreck labels in Run 1; dropped — Du et al. 2023 (&sect;12) independently found it a poor transfer source</td></tr>
+        <tr><td>Marine-PULSE <span class="l3">(Du et al., Zenodo 7922705)</span></td><td>not yet used — 323 real pipeline/cable SSS images; candidate <code>submarine_pipeline</code> top-up or in-domain pretraining set (&sect;14)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Companion documents</h3>
+  <ul class="clean col">
+    <li><code>docs/run1_detector_report.html</code> · <code>run2_detector_report.html</code> — the runs in depth</li>
+    <li><code>docs/module3_geotag_report.html</code> — geotagging build &amp; validation</li>
+    <li><code>docs/training_glossary.html</code> — every term in the training log, with diagrams</li>
+    <li><code>docs/status_and_plan.html</code> · <code>pipeline_summary_raw_model.html</code> — dependency map &amp; the raw-model baseline</li>
+  </ul>
+
+  <h3>Literature reviewed</h3>
+  <p class="col">The twelve sources benchmarked against DRISHTI, with per-source takeaways and the
+  &ldquo;where DRISHTI sits&rdquo; posture, are in <strong>&sect;12</strong>. The pre-final-training change
+  list distilled from them lives in <code>docs/pre_final_training_changes.md</code>.</p>
+</section>
+
+<footer>
+  DRISHTI · project record · SIH 2026 PS 26057 · compiled 2026-09-02 ·
+  shipped model: best_detector.pt (preprocessed) + best_detector.onnx (FP32, edge) · 12 sources reviewed (§12)
+</footer>
+</body>
+</html>

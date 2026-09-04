@@ -1,0 +1,212 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: #f4f7f9;
+  color: #17212b;
+}
+
+button {
+  font: inherit;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  background: #0b1f2a;
+  color: white;
+  padding: 24px 40px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 2px;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #b7c8d1;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.muted {
+  color: #667781;
+}
+
+.primary-button,
+.secondary-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-button {
+  background: #087ea4;
+  color: white;
+}
+
+.primary-button:hover {
+  background: #066b8b;
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background: #e8eef2;
+  color: #24343d;
+}
+
+.message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef7fa;
+  color: #24596b;
+  word-break: break-word;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.job-card {
+  border: 1px solid #dce4e8;
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.job-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.job-id {
+  margin-top: 5px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #61717a;
+  word-break: break-all;
+}
+
+.status {
+  height: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-queued {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-running {
+  background: #d9f0ff;
+  color: #075985;
+}
+
+.status-completed {
+  background: #dff6e8;
+  color: #176b3a;
+}
+
+.status-failed {
+  background: #ffe1e1;
+  color: #9b1c1c;
+}
+
+.job-info {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  font-size: 14px;
+}
+
+.job-info span:first-child {
+  color: #71808a;
+  min-width: 50px;
+}
+
+.progress-section {
+  margin-top: 18px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e4eaed;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #087ea4;
+  transition: width 0.3s ease;
+}
+
+.error {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 7px;
+  background: #fff0f0;
+  color: #9b1c1c;
+}
+
+.detections {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e5eaed;
+}

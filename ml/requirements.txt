@@ -1,0 +1,35 @@
+# ---- DRISHTI ML: training, evaluation, calibration, export ----
+
+# Core deep learning
+torch>=2.3
+torchvision>=0.18
+
+# Detection / segmentation
+ultralytics>=8.3            # YOLOv8n-seg (and yolo26n-seg) training + export
+segmentation-models-pytorch>=0.3   # U-Net + ResNet34 reference architecture
+
+# Classical CV / preprocessing
+opencv-python-headless>=4.10         # speckle denoise, slant-range correction, resampling
+albumentations>=1.4         # augmentation pipeline
+scikit-image>=0.23          # additional filtering (e.g. speckle/Lee-filter style ops)
+
+# Data handling
+numpy>=1.26
+pandas>=2.2
+h5py>=3.11                  # Watertank/Turntable HDF5 releases
+
+# Confidence calibration
+scikit-learn>=1.5           # Platt scaling / logistic regression calibration
+
+# Model export
+onnx>=1.16
+onnxruntime>=1.18           # CPU inference benchmarking (Tier 0)
+onnxsim>=0.4                # simplify exported ONNX graphs
+
+# Dataset tooling
+roboflow>=1.1                # dataset hosting, augmentation, YOLO-format export
+
+# Experiment tracking / notebooks
+matplotlib>=3.9
+jupyter>=1.0
+tqdm>=4.66

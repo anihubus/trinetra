@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRISHTI · Raw-Model Pipeline</title>
+<meta name="description" content="The complete raw-data-model pipeline end to end — every module's job, what was built, the measured results, the review workflow, and where each number comes from — before the preprocessing/retrain restart.">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f3f6f7;--surface:#fcfdfd;--surface-2:#eaeef0;
+    --ink:#0f1519;--ink-2:#48535a;--muted:#7b868c;
+    --rule:#dbe2e5;--rule-strong:#c3ccd0;
+    --accent:#0e7c8b;--accent-soft:#e2f0f2;
+    --good:#0a7d1f;--good-soft:#e3f2e6;
+    --warn:#9a6400;--warn-soft:#f6ecda;
+    --crit:#c22f2f;--crit-soft:#f7e3e3;
+    --shadow:0 1px 2px rgba(15,25,30,.06),0 8px 24px -12px rgba(15,25,30,.14);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+    --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+    --rule:#252f36;--rule-strong:#33404a;
+    --accent:#3fb6c6;--accent-soft:#123037;
+    --good:#3fbf57;--good-soft:#12331a;--warn:#e0a01e;--warn-soft:#33290f;
+    --crit:#e35b5b;--crit-soft:#361a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+  }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+    --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+    --rule:#252f36;--rule-strong:#33404a;
+    --accent:#3fb6c6;--accent-soft:#123037;
+    --good:#3fbf57;--good-soft:#12331a;--warn:#e0a01e;--warn-soft:#33290f;
+    --crit:#e35b5b;--crit-soft:#361a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  header.mast{max-width:1040px;margin:0 auto;padding:52px 24px 22px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;display:flex;align-items:center;gap:12px}
+  .kicker::after{content:"";height:1px;flex:1;background:var(--rule)}
+  h1{font-size:clamp(1.9rem,5vw,2.9rem);line-height:1.05;letter-spacing:-.02em;font-weight:600;margin:0 0 14px;text-wrap:balance}
+  .standfirst{font-size:1.13rem;color:var(--ink-2);margin:0;max-width:64ch;text-wrap:pretty}
+  section{max-width:1040px;margin:0 auto;padding:26px 24px 0}
+  .col{max-width:780px}
+  h2{font-size:1rem;font-weight:600;letter-spacing:.02em;margin:44px 0 4px;padding-top:22px;border-top:1px solid var(--rule-strong);display:flex;align-items:baseline;gap:12px}
+  h2 .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+  h3{font-size:1rem;font-weight:600;margin:24px 0 4px}
+  p{margin:11px 0;max-width:74ch}
+  strong{font-weight:600}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 20px 14px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:12px;max-width:74ch}
+  .fig-title{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+  svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+
+  .tbl-scroll{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+  tbody td:first-child{font-weight:500}
+  td.mono{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;letter-spacing:.02em;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+  .pill.good{color:var(--good);background:var(--good-soft)}
+  .pill.warn{color:var(--warn);background:var(--warn-soft)}
+  .pill.crit{color:var(--crit);background:var(--crit-soft)}
+  .pill.flat{color:var(--ink-2);background:var(--surface-2)}
+  .pill.accent{color:var(--accent);background:var(--accent-soft)}
+
+  .modcard{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:var(--shadow)}
+  .modcard h3{margin:0 0 2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .modcard .role{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .modcard .grid{display:grid;grid-template-columns:88px 1fr;gap:4px 14px;font-size:13.5px}
+  .modcard .grid dt{font-weight:600;color:var(--ink-2);font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding-top:3px}
+  .modcard .grid dd{margin:0;color:var(--ink-2)}
+  .modcard .grid dd b{color:var(--ink)}
+
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:18px 0}
+  .readout div{background:var(--surface);padding:13px 15px}
+  .readout .v{font-family:"IBM Plex Mono",monospace;font-size:1.35rem;font-weight:500}
+  .readout .v.ok{color:var(--good)} .readout .v.bad{color:var(--crit)}
+  .readout .l{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+  ul.tick{list-style:none;padding:0;margin:12px 0}
+  ul.tick li{padding:6px 0 6px 24px;position:relative;border-bottom:1px solid var(--rule);font-size:14px}
+  ul.tick li:last-child{border-bottom:0}
+  ul.tick li::before{content:"";position:absolute;left:3px;top:12px;width:8px;height:8px;border:1.5px solid var(--accent);border-radius:2px}
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:16px 20px;margin:18px 0;box-shadow:var(--shadow)}
+  .note h3{margin:0 0 6px}
+  footer{max-width:1040px;margin:40px auto 0;padding:20px 24px;border-top:1px solid var(--rule-strong);color:var(--muted);font-size:12px;font-family:"IBM Plex Mono",monospace}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+</head>
+<body>
+<header class="mast">
+  <p class="kicker">DRISHTI &nbsp;/&nbsp; SIH 2026 &nbsp;/&nbsp; PS 26057 &nbsp;/&nbsp; raw-model baseline</p>
+  <h1>The whole pipeline, end to end</h1>
+  <p class="standfirst">Everything built on the current (raw-data) detector, one page: what each stage does,
+  what was measured, where every number comes from, and how a person reviews a flagged detection &mdash;
+  the baseline we compare the preprocessing/retrain restart against.</p>
+</header>
+
+<section>
+  <h2 class="col"><span class="n">00</span> One-glance status</h2>
+  <div class="readout col">
+    <div><div class="v ok mono">0.99</div><div class="l">pipeline AP@50 (real)</div></div>
+    <div><div class="v mono">0.61</div><div class="l">detector mAP@50 (5-class)</div></div>
+    <div><div class="v ok mono">&lt;1 m</div><div class="l">geotag position error</div></div>
+    <div><div class="v mono">~8 s</div><div class="l">full transect, end to end</div></div>
+    <div><div class="v mono">3 / 4</div><div class="l">modules functional</div></div>
+  </div>
+  <p class="col"><strong>Where it stands:</strong> one production-grade capability (pipeline detection),
+  a working confidence filter, validated geotagging, and a report that runs on real unseen sonar in seconds.
+  Weak spots: shipwreck/cylinder at ~0.45 (data-limited), ghost-net synthetic-only, calibration needs a
+  per-class refit, and the model doesn't transfer to a different survey without fine-tuning.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">01</span> The pipeline &mdash; every stage, with its headline result</h2>
+  <figure>
+    <div class="fig-title">Raw sonar &rarr; geotagged report, and where each number is measured</div>
+    <svg viewBox="0 0 940 470" role="img" aria-label="End-to-end flowchart. Raw sonar log feeds Preprocess (Lee filter and CLAHE, built but not wired into training). Then Module 1 detection: YOLOv8s, four classes, submarine pipeline AP50 0.99, shipwreck and cylinder about 0.45, 3.8 ms per frame. Then Module 2 confidence and noise: per-class score gate that lifts shipwreck precision 0.63 to 0.73 and cylinder 0.58 to 0.75, plus calibration (needs per-class refit) and a shadow-geometry check (marginal on tiles). Then Module 3 geotag and report: navigation parsed, XTF position validated under 1 metre, output as JSON, CSV and GeoJSON with a ping-id audit pointer and a review_status. Module 4 dashboard runs in parallel on mock data and will render the GeoJSON and host the review queue. A real AURORA end-to-end run: 15 raw detections became 1 kept, flagged pending review.">
+      <defs>
+        <marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+      </defs>
+      <!-- lane of boxes -->
+      <g font-size="12">
+        <rect x="14" y="30" width="120" height="66" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+        <text x="74" y="55" text-anchor="middle" class="m" font-weight="600" fill="var(--ink)">raw sonar</text>
+        <text x="74" y="72" text-anchor="middle" fill="var(--muted)">XTF / TIF</text>
+        <text x="74" y="86" text-anchor="middle" fill="var(--muted)">+ navigation</text>
+
+        <rect x="152" y="30" width="132" height="66" rx="7" fill="var(--warn-soft)" stroke="var(--warn)"/>
+        <text x="218" y="52" text-anchor="middle" font-weight="600" fill="var(--ink)">Preprocess</text>
+        <text x="218" y="68" text-anchor="middle" fill="var(--muted)" class="m">Lee · CLAHE · slant</text>
+        <text x="218" y="85" text-anchor="middle" fill="var(--warn)">built · not wired</text>
+
+        <rect x="302" y="24" width="150" height="78" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+        <text x="377" y="44" text-anchor="middle" font-weight="600" fill="var(--ink)">M1 · Detect</text>
+        <text x="377" y="60" text-anchor="middle" fill="var(--muted)" class="m">YOLOv8s · nc=4</text>
+        <text x="377" y="76" text-anchor="middle" fill="var(--good)">pipeline AP50 0.99</text>
+        <text x="377" y="90" text-anchor="middle" fill="var(--muted)">wreck/cyl ~0.45 · 3.8ms</text>
+
+        <rect x="470" y="18" width="168" height="90" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="554" y="38" text-anchor="middle" font-weight="600" fill="var(--ink)">M2 · Confidence</text>
+        <text x="554" y="54" text-anchor="middle" fill="var(--muted)" class="m">per-class gate</text>
+        <text x="554" y="68" text-anchor="middle" fill="var(--accent)">wreck P .63&rarr;.73</text>
+        <text x="554" y="82" text-anchor="middle" fill="var(--muted)">calib: refit · shadow: weak</text>
+        <text x="554" y="98" text-anchor="middle" fill="var(--muted)">score &rarr; 0&ndash;100%</text>
+
+        <rect x="656" y="24" width="150" height="78" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+        <text x="731" y="44" text-anchor="middle" font-weight="600" fill="var(--ink)">M3 · Geotag</text>
+        <text x="731" y="60" text-anchor="middle" fill="var(--muted)" class="m">px &rarr; lat/lon</text>
+        <text x="731" y="76" text-anchor="middle" fill="var(--good)">&lt; 1 m validated</text>
+        <text x="731" y="90" text-anchor="middle" fill="var(--muted)">JSON · CSV · GeoJSON</text>
+
+        <rect x="824" y="30" width="104" height="66" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+        <text x="876" y="52" text-anchor="middle" font-weight="600" fill="var(--ink)">M4 · UI</text>
+        <text x="876" y="68" text-anchor="middle" fill="var(--muted)" class="m">map · review</text>
+        <text x="876" y="84" text-anchor="middle" fill="var(--muted)">parallel · mocks</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.5" fill="none">
+        <line x1="134" y1="63" x2="150" y2="63" marker-end="url(#pf)"/>
+        <line x1="284" y1="63" x2="300" y2="63" marker-end="url(#pf)"/>
+        <line x1="452" y1="63" x2="468" y2="63" marker-end="url(#pf)"/>
+        <line x1="638" y1="63" x2="654" y2="63" marker-end="url(#pf)"/>
+        <line x1="806" y1="63" x2="822" y2="63" marker-end="url(#pf)"/>
+      </g>
+
+      <!-- outputs row -->
+      <g font-size="11.5">
+        <rect x="656" y="150" width="272" height="60" rx="7" fill="var(--surface)" stroke="var(--rule)"/>
+        <text x="670" y="170" font-weight="600" fill="var(--ink)">report record  (one per hazard)</text>
+        <text x="670" y="186" fill="var(--muted)" class="m">lat/lon · class · 0&ndash;100% · size_m · side</text>
+        <text x="670" y="200" fill="var(--muted)" class="m">ping_id (audit) · timestamp · review_status</text>
+        <path d="M731 102 V150" stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#pf)"/>
+      </g>
+
+      <!-- review lifecycle -->
+      <text x="14" y="252" class="m" font-weight="600" fill="var(--ink)" font-size="12">review_status &mdash; the lifecycle of one detection</text>
+      <g font-size="11.5">
+        <rect x="14" y="266" width="150" height="46" rx="6" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+        <text x="89" y="286" text-anchor="middle" fill="var(--ink)">calibrated score</text>
+        <text x="89" y="301" text-anchor="middle" fill="var(--muted)" class="m">0&ndash;100 %</text>
+
+        <rect x="220" y="238" width="170" height="42" rx="6" fill="var(--crit-soft)" stroke="var(--crit)"/>
+        <text x="305" y="258" text-anchor="middle" fill="var(--ink)">&lt; 30 %  &rarr;  dropped</text>
+        <text x="305" y="272" text-anchor="middle" fill="var(--muted)">never shown</text>
+
+        <rect x="220" y="290" width="170" height="42" rx="6" fill="var(--warn-soft)" stroke="var(--warn)"/>
+        <text x="305" y="310" text-anchor="middle" fill="var(--ink)">30&ndash;80 %  &rarr;  pending_review</text>
+        <text x="305" y="324" text-anchor="middle" fill="var(--muted)">goes to the queue</text>
+
+        <rect x="220" y="342" width="170" height="42" rx="6" fill="var(--good-soft)" stroke="var(--good)"/>
+        <text x="305" y="362" text-anchor="middle" fill="var(--ink)">&ge; 80 %  &rarr;  auto_confirmed</text>
+        <text x="305" y="376" text-anchor="middle" fill="var(--muted)">on the map straight away</text>
+
+        <path d="M164 289 H192 V259 H216" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+        <path d="M192 289 H216" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+        <path d="M192 289 V311 H216" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+        <path d="M192 289 V363 H216" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+
+        <rect x="446" y="290" width="190" height="42" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="541" y="310" text-anchor="middle" fill="var(--ink)">analyst opens M4 queue</text>
+        <text x="541" y="324" text-anchor="middle" fill="var(--muted)">sonar crop + map pin</text>
+        <path d="M390 311 H444" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+
+        <rect x="686" y="264" width="180" height="30" rx="6" fill="var(--good-soft)" stroke="var(--good)"/>
+        <text x="776" y="283" text-anchor="middle" fill="var(--ink)">analyst_confirmed</text>
+        <rect x="686" y="328" width="180" height="30" rx="6" fill="var(--crit-soft)" stroke="var(--crit)"/>
+        <text x="776" y="347" text-anchor="middle" fill="var(--ink)">analyst_rejected</text>
+        <path d="M636 311 H666 V279 H684" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+        <path d="M666 311 V343 H684" stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#pf)"/>
+      </g>
+
+      <text x="14" y="420" fill="var(--muted)" font-size="11" class="m">Today: the review queue UI (M4) is on mock data. Until it's wired, "pending_review" cases are the</text>
+      <text x="14" y="436" fill="var(--muted)" font-size="11" class="m">rows in report.csv / report.json where review_status == pending_review.</text>
+    </svg>
+    <figcaption>Green = working and measured. Teal = built, partly proven. Amber = built but not in the live
+    path. Each box carries its headline number; the sections below show where it comes from.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">02</span> Module 1 &mdash; Detector <span class="pill good" style="margin-left:4px">locked</span></h2>
+  <div class="modcard col">
+    <h3>Detect &amp; classify man-made seabed objects</h3>
+    <p class="role">YOLOv8s, box detection, fine-tuned from COCO. 4 shipped classes after the crab-pot drop.</p>
+    <dl class="grid">
+      <dt>Built</dt><dd>Two training runs (120 epochs, ~2.8 h each on RTX 4050). Dataset: ~4,900 train tiles from 4 real SSS sources + synthetic ghost-net + 500 background tiles.</dd>
+      <dt>Result</dt><dd>Held-out test, 785 images &mdash; per class below.</dd>
+    </dl>
+  </div>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Class</th><th class="num">AP@50</th><th class="num">P @ op-threshold</th><th class="num">R</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>submarine_pipeline</td><td class="num">0.994</td><td class="num">0.99</td><td class="num">0.99</td><td><span class="pill good">production-ready · real data</span></td></tr>
+        <tr><td>shipwreck</td><td class="num">0.450</td><td class="num">0.73</td><td class="num">0.43</td><td><span class="pill warn">data-limited (152 usable tiles)</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="num">0.398</td><td class="num">0.75</td><td class="num">0.38</td><td><span class="pill warn">tiny targets · ~315 real</span></td></tr>
+        <tr><td>ghost_net</td><td class="num">0.995</td><td class="num">1.00</td><td class="num">1.00</td><td><span class="pill flat">synthetic only &mdash; proof of concept</span></td></tr>
+        <tr><td>crab_pot</td><td class="num">0.193</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td><span class="pill crit">dropped &rarr; roadmap slide</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col mono" style="font-size:12.5px;color:var(--muted)">5-class overall: mAP50 0.606 · mAP50-95 0.437 ·
+  precision 0.734 · recall 0.650 · FP rate 0.266 · 3.8 ms/frame. Run 1 &rarr; Run 2 traded flat coverage for
+  a cleaner FP rate (0.31 &rarr; 0.27).</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">03</span> Module 2 &mdash; Confidence &amp; noise filtering <span class="pill accent" style="margin-left:4px">functional</span></h2>
+  <div class="modcard col">
+    <h3>Cut false alarms, output an honest 0&ndash;100% score</h3>
+    <p class="role">Three stages after the detector: per-class score gate &rarr; calibration &rarr; shadow-geometry check.</p>
+  </div>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Stage</th><th>What it does</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Per-class score gate</td><td>Drop detections below a class-specific raw threshold (pipeline 0.25, shipwreck/cylinder 0.40). FPs sit far below TPs in score.</td><td><span class="pill good">works</span> shipwreck P 0.63&rarr;0.73, cylinder 0.58&rarr;0.75</td></tr>
+        <tr><td>Calibration (Platt)</td><td>Map raw score &rarr; true probability for the displayed %.</td><td><span class="pill warn">refit needed</span> one global fit made ECE worse (0.042&rarr;0.090); needs per-class</td></tr>
+        <tr><td>Shadow-geometry check</td><td>Demote detections whose acoustic shadow is geometrically impossible (rock clusters).</td><td><span class="pill flat">inconclusive on tiles</span> ~1 TP lost per FP removed; needs real transect geometry</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col">Net: the <strong>per-class gate is Module 2's proven false-positive filter.</strong> Calibration
+  is a quick fix away from being pitch-ready. The shadow check is wired and unit-tested but only meaningful on
+  full transects with real ping geometry &mdash; which Module 3 now provides, but AURORA has no labels to score it.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">04</span> Module 3 &mdash; Geotag &amp; report <span class="pill good" style="margin-left:4px">core done</span></h2>
+  <div class="modcard col">
+    <h3>Detection pixel &rarr; latitude, longitude, size &rarr; structured report</h3>
+    <p class="role">Parse navigation once; project every detection through the sonar geometry; emit JSON / CSV / GeoJSON.</p>
+  </div>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Part</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Navigation parsing</td><td><span class="pill good">solid</span> AURORA <code>navigation.csv</code> 92,450 rows / 12.8 h · <code>side-scan-sonar-index.csv</code> 259k rows · time-interpolated fixes</td></tr>
+        <tr><td>XTF ping-header parser</td><td><span class="pill good">solid</span> 8,000 headers / 0.10 s · lat/lon/heading validated <strong>&lt; 1 m</strong> vs the independent nav CSV</td></tr>
+        <tr><td>Pixel &rarr; lat/lon projection</td><td><span class="pill good">solid</span> 6 unit tests pass · row&rarr;ping&rarr;fix, col&rarr;slant&rarr;ground range&rarr;geodesic offset</td></tr>
+        <tr><td>Report + exporters</td><td><span class="pill good">solid</span> matches the locked API contract · JSON envelope + Leaflet GeoJSON + flat CSV · <code>ping_id</code> audit pointer</td></tr>
+        <tr><td>Across-track scale · row&rarr;ping map · along-track size</td><td><span class="pill warn">approximate</span> use XTF slant range; refine row&harr;ping on a real TIF; <code>height_m</code> needs ping-rate&times;speed</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">05</span> Wire-up &amp; the real-data run <span class="pill accent" style="margin-left:4px">done</span></h2>
+  <p class="col"><code>ml/inference/pipeline.py</code> chains detect &rarr; Module 2 &rarr; Module 3 into one call.
+  <code>ml/scripts/run_aurora_survey.py</code> tiles a full transect TIF, runs it, aggregates one report.</p>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>AURORA transect</th><th class="num">raw detections</th><th class="num">after Module 2</th><th>kept record</th></tr></thead>
+      <tbody>
+        <tr><td>DATA0000106</td><td class="num">15</td><td class="num">1</td><td>shipwreck 38% · (50.3931, -7.7122) · <span class="pill warn">pending_review</span></td></tr>
+        <tr><td>DATA0000108</td><td class="num">0</td><td class="num">0</td><td>&mdash;</td></tr>
+        <tr><td>DATA0000112</td><td class="num">8</td><td class="num">0</td><td>&mdash; (all below the gates)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note col">
+    <h3>What the real-data run proves &mdash; and what it exposes</h3>
+    <p style="margin:6px 0"><strong>Proves:</strong> the full pipeline runs on unseen real sonar (TIF &rarr; tiles
+    &rarr; detect &rarr; filter &rarr; geotag &rarr; JSON/GeoJSON/CSV) in ~8&nbsp;s, and Module 2 correctly
+    suppresses noise (15 &rarr; 1, flagged for review not auto-confirmed).</p>
+    <p style="margin:6px 0"><strong>Exposes:</strong> the model barely fires on AURORA &mdash; a different sonar
+    instrument and seabed than any training source. It doesn't transfer without fine-tuning on the target
+    survey. That's the honest deployment story, and the strongest argument for the retrain restart.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">06</span> Where to review the flagged (pending_review) cases</h2>
+  <ul class="tick col">
+    <li><strong>Today (no UI yet):</strong> open <code>&lt;run&gt;/report.csv</code> or <code>report.json</code>
+    and filter <code>review_status == "pending_review"</code>. Each row has the sonar pixel bbox, the lat/lon,
+    the <code>ping_id</code> (jump back to the exact ping), the timestamp, and the %.</li>
+    <li><strong>Target &mdash; Module 4 Review Queue:</strong> <code>frontend/src/components/ReviewQueue/</code>
+    (scaffolded). Shows each pending detection as a sonar crop next to its map pin; the analyst clicks
+    <em>confirm</em> or <em>reject</em>, which PATCHes <code>review_status</code> to
+    <code>analyst_confirmed</code> / <code>analyst_rejected</code> in PostgreSQL.</li>
+    <li><strong>The bands:</strong> &lt;30% dropped (never shown) · 30&ndash;80% pending_review (goes to the
+    queue) · &ge;80% auto_confirmed (straight onto the map). Thresholds live in
+    <code>backend/reporting/schema.py</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">07</span> Final results &mdash; the raw-model baseline</h2>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Capability</th><th>State</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Pipeline detection</td><td><span class="pill good">production-grade</span></td><td>0.994 AP@50 on held-out real SSS, 3.8 ms/frame</td></tr>
+        <tr><td>Shipwreck / cylinder detection</td><td><span class="pill warn">usable, data-limited</span></td><td>~0.45 AP@50; P 0.73&ndash;0.75 at a working threshold</td></tr>
+        <tr><td>Ghost-net detection</td><td><span class="pill flat">concept only</span></td><td>0.995 on synthetic; no real SSS net data exists</td></tr>
+        <tr><td>Confidence scoring &amp; FP filter</td><td><span class="pill accent">functional</span></td><td>per-class gate cuts FPs; calibration needs a per-class refit</td></tr>
+        <tr><td>Acoustic-shadow false-positive check</td><td><span class="pill warn">wired, unproven</span></td><td>math verified; needs a labelled + geo-referenced transect to quantify</td></tr>
+        <tr><td>Geotagging &amp; structured report</td><td><span class="pill good">done &amp; validated</span></td><td>position &lt; 1 m vs recorded nav; JSON + CSV + GeoJSON</td></tr>
+        <tr><td>End-to-end on real survey data</td><td><span class="pill good">runs</span></td><td>AURORA transect &rarr; report in ~8 s</td></tr>
+        <tr><td>Cross-survey generalisation</td><td><span class="pill crit">needs fine-tuning</span></td><td>near-zero detections on AURORA (unseen instrument/seabed)</td></tr>
+        <tr><td>Dashboard / review UI</td><td><span class="pill flat">parallel · mocks</span></td><td>React + Leaflet + ReviewQueue scaffolded</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col"><strong>Bottom line:</strong> the architecture is complete and every module runs. One capability
+  is genuinely strong; two are usable-but-thin; the confidence and geotag layers work. The known gaps &mdash;
+  data-limited classes, calibration refit, shadow-check validation, cross-survey transfer &mdash; are exactly
+  what the preprocessing + retrain restart targets.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">08</span> Then &mdash; the restart</h2>
+  <ol style="max-width:74ch;padding-left:22px;color:var(--ink-2)">
+    <li><strong>Module 0 preprocess</strong> &mdash; bake Lee filter + CLAHE + slant-range into <code>build_dataset.py</code> so train and serve match.</li>
+    <li><strong>Retrain</strong> &mdash; one run: <code>nc=4</code> + AI4Shipwrecks overlap re-tile + cylinder copy-paste + NonMILCO + <code>imgsz 896</code> + preprocessing.</li>
+    <li><strong>Redo Module 2</strong> &mdash; per-class calibrators on the new model, re-run <code>eval_module2.py</code>.</li>
+    <li><strong>Compare</strong> &mdash; preprocessed-model pipeline vs this raw-model baseline, same test protocol.</li>
+  </ol>
+</section>
+
+<footer>
+  DRISHTI &middot; raw-model pipeline summary &middot; companions: run1_detector_report · run2_detector_report ·
+  module3_geotag_report · training_glossary · status_and_plan &middot; 2026-08-31
+</footer>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# ─── DRISHTI edge inference service (Tier 0: laptop CPU / Tier 1: Jetson) ───
+# Torch-free. On a Jetson/CUDA target swap onnxruntime -> onnxruntime-gpu.
+
+onnxruntime>=1.18
+numpy>=1.26
+opencv-python-headless>=4.10
+scikit-learn>=1.5            # calibrator.pkl unpickles to sklearn LogisticRegression
+fastapi>=0.111
+uvicorn>=0.30
+pydantic>=2.7

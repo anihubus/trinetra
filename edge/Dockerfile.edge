@@ -1,0 +1,31 @@
+# DRISHTI edge inference - Tier 0 (CPU). Torch-free: onnxruntime + numpy + opencv.
+# Build:  docker build -f edge/Dockerfile.edge -t drishti-edge .
+# Run:    docker run --rm -p 8100:8100 -v $PWD/ml/models/exported:/app/ml/models/exported drishti-edge
+#
+# For a Jetson / CUDA target: base off nvcr.io/nvidia/l4t-ml and swap
+# onnxruntime -> onnxruntime-gpu in edge/requirements.txt (TensorRT EP).
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+
+COPY edge/requirements.txt edge/requirements.txt
+RUN pip install --no-cache-dir -r edge/requirements.txt
+
+# only what the torch-free path imports
+COPY edge/ edge/
+COPY ml/scripts/preprocess_sonar.py ml/scripts/preprocess_sonar.py
+COPY ml/inference/ ml/inference/
+COPY backend/geotagging/ backend/geotagging/
+COPY backend/reporting/ backend/reporting/
+COPY ml/models/exported/ ml/models/exported/
+
+ENV DRISHTI_ONNX=/app/ml/models/exported/best_detector.onnx \
+    DRISHTI_CALIBRATOR=/app/ml/models/exported/calibrator.pkl \
+    DRISHTI_PREPROCESS=1
+
+EXPOSE 8100
+CMD ["uvicorn", "edge.onnx_runtime_server:app", "--host", "0.0.0.0", "--port", "8100"]

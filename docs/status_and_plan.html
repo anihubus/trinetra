@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRISHTI · Status & Plan</title>
+<meta name="description" content="Where the four DRISHTI modules stand, the pipeline dependency map, and the action sequence to a working end-to-end demo by 5 September — Module 3 next, retrain last.">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f3f6f7;--surface:#fcfdfd;--surface-2:#eaeef0;
+    --ink:#0f1519;--ink-2:#48535a;--muted:#7b868c;
+    --rule:#dbe2e5;--rule-strong:#c3ccd0;
+    --accent:#0e7c8b;--accent-soft:#e2f0f2;
+    --good:#0a7d1f;--good-soft:#e3f2e6;
+    --warn:#9a6400;--warn-soft:#f6ecda;
+    --crit:#c22f2f;--crit-soft:#f7e3e3;
+    --shadow:0 1px 2px rgba(15,25,30,.06),0 8px 24px -12px rgba(15,25,30,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+      --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+      --rule:#252f36;--rule-strong:#33404a;
+      --accent:#3fb6c6;--accent-soft:#123037;
+      --good:#3fbf57;--good-soft:#12331a;
+      --warn:#e0a01e;--warn-soft:#33290f;
+      --crit:#e35b5b;--crit-soft:#361a1a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+    --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+    --rule:#252f36;--rule-strong:#33404a;
+    --accent:#3fb6c6;--accent-soft:#123037;
+    --good:#3fbf57;--good-soft:#12331a;
+    --warn:#e0a01e;--warn-soft:#33290f;
+    --crit:#e35b5b;--crit-soft:#361a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  header.mast{max-width:1000px;margin:0 auto;padding:52px 24px 24px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;display:flex;align-items:center;gap:12px}
+  .kicker::after{content:"";height:1px;flex:1;background:var(--rule)}
+  h1{font-size:clamp(1.9rem,5vw,2.8rem);line-height:1.06;letter-spacing:-.02em;font-weight:600;margin:0 0 16px;text-wrap:balance}
+  .standfirst{font-size:1.14rem;color:var(--ink-2);margin:0;max-width:62ch;text-wrap:pretty}
+  section{max-width:1000px;margin:0 auto;padding:28px 24px 0}
+  .col{max-width:770px}
+  h2{font-size:1rem;font-weight:600;letter-spacing:.02em;margin:44px 0 4px;padding-top:22px;border-top:1px solid var(--rule-strong);display:flex;align-items:baseline;gap:12px}
+  h2 .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+  h3{font-size:1rem;font-weight:600;margin:24px 0 4px}
+  p{margin:11px 0;max-width:72ch}
+  strong{font-weight:600}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+  .tbl-scroll{overflow-x:auto;margin:18px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+  tbody td:first-child{font-weight:500}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+  .pill.done{color:var(--good);background:var(--good-soft)}
+  .pill.now{color:var(--accent);background:var(--accent-soft)}
+  .pill.wait{color:var(--warn);background:var(--warn-soft)}
+  .pill.next{color:var(--ink-2);background:var(--surface-2)}
+
+  figure{margin:24px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 20px 14px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:13px;color:var(--muted);margin-top:12px;max-width:70ch}
+  .fig-title{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+  svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .axis{fill:var(--muted);font-size:11px}
+  .lbl{fill:var(--ink);font-size:12.5px}
+  .sub{fill:var(--muted);font-size:10.5px}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:20px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:2px 0 20px 46px;border-left:1px solid var(--rule);margin-left:14px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:-15px;top:-4px;width:29px;height:29px;border-radius:50%;background:var(--surface);border:1px solid var(--rule-strong);color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  ol.steps>li:last-child{border-left-color:transparent}
+  ol.steps>li h4{margin:0 0 3px;font-size:1rem;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  ol.steps>li p{margin:4px 0;font-size:14.5px;color:var(--ink-2)}
+  .owner{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px solid var(--rule);border-radius:4px;padding:1px 6px}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:16px 20px;margin:20px 0;box-shadow:var(--shadow)}
+  .note h3{margin:0 0 6px}
+  .gate{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .gate b{color:var(--ink)}
+  ul.tick{list-style:none;padding:0;margin:12px 0}
+  ul.tick li{padding:6px 0 6px 24px;position:relative;border-bottom:1px solid var(--rule);font-size:14px}
+  ul.tick li:last-child{border-bottom:0}
+  ul.tick li::before{content:"";position:absolute;left:3px;top:12px;width:8px;height:8px;border:1.5px solid var(--accent);border-radius:2px}
+  footer{max-width:1000px;margin:42px auto 0;padding:20px 24px;border-top:1px solid var(--rule-strong);color:var(--muted);font-size:12px;font-family:"IBM Plex Mono",monospace}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+</head>
+<body>
+<header class="mast">
+  <p class="kicker">DRISHTI &nbsp;/&nbsp; SIH 2026 &nbsp;/&nbsp; PS 26057 &nbsp;/&nbsp; deadline 5 Sep</p>
+  <h1>Status &amp; plan &mdash; Module 3 next, retrain last</h1>
+  <p class="standfirst">The detector is done and locked. Module 2 is half-built. The critical path now runs
+  through the geotagging engine, because it unblocks the report, the map, and Module 2's shadow check. The
+  retrain is polish and goes last &mdash; it blocks nothing.</p>
+</header>
+
+<section>
+  <h2 class="col"><span class="n">01</span> Where the four modules stand</h2>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Module</th><th>State</th><th>What's real</th><th>What's left</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1 &mdash; Detector</td>
+          <td><span class="pill done">locked</span></td>
+          <td>YOLOv8s, <code>nc=4</code>. Pipeline P .99 / R .99. Shipwreck &amp; cylinder P .68&ndash;.75 at a working threshold. 3.8&nbsp;ms/frame.</td>
+          <td>Optional bundled retrain (last). Ship the class-0 filter + <code>nc:4</code> yaml.</td>
+        </tr>
+        <tr>
+          <td>2 &mdash; Confidence &amp; noise</td>
+          <td><span class="pill now">half-built</span></td>
+          <td>Calibrator fits &amp; runs. Score-separation measured: FPs are low-scoring junk &rarr; per-class thresholds work.</td>
+          <td>Per-class calibrator (global fit doesn't transfer, ECE 0.04&rarr;0.09). Shadow check needs Module 3 geometry.</td>
+        </tr>
+        <tr>
+          <td>3 &mdash; Geotag &amp; report</td>
+          <td><span class="pill next">not started</span></td>
+          <td>Scaffold only: <code>xtf_reader.py</code>, <code>metadata_parser.py</code>, <code>coordinate_projection.py</code>, <code>schema.py</code>. AURORA dataset on disk (real XTF + <code>navigation.csv</code>).</td>
+          <td>Everything &mdash; <strong>starting now</strong>.</td>
+        </tr>
+        <tr>
+          <td>4 &mdash; Dashboard</td>
+          <td><span class="pill now">parallel</span></td>
+          <td>React + Leaflet scaffold, building on mock data per the locked API contract.</td>
+          <td>Swap mock &rarr; live API once Modules 2 &amp; 3 emit real records.</td>
+        </tr>
+        <tr>
+          <td>0 &mdash; Preprocess</td>
+          <td><span class="pill wait">built, not wired</span></td>
+          <td>Lee filter + CLAHE + slant-range code exists, shared train/serve.</td>
+          <td>Bake into the retrain (train + serve together) or keep as display-only + roadmap.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">02</span> Results so far &mdash; the numbers we can stand behind</h2>
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Class</th><th class="num">AP@50</th><th>At a working threshold (raw&nbsp;&asymp;&nbsp;0.35&ndash;0.45)</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr><td>submarine_pipeline</td><td class="num">0.994</td><td class="mono">P 0.99&nbsp;·&nbsp;R 0.99</td><td><span class="pill done">production-ready, real data</span></td></tr>
+        <tr><td>shipwreck</td><td class="num">0.450</td><td class="mono">P 0.73&nbsp;·&nbsp;R 0.43</td><td><span class="pill wait">usable, data-limited</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="num">0.398</td><td class="mono">P 0.75&nbsp;·&nbsp;R 0.38</td><td><span class="pill wait">usable, tiny targets</span></td></tr>
+        <tr><td>ghost_net</td><td class="num">0.995</td><td class="mono">P 1.00&nbsp;·&nbsp;R 1.00</td><td><span class="pill next">synthetic only &mdash; proof of concept</span></td></tr>
+        <tr><td>crab_pot</td><td class="num">0.193</td><td class="mono">P 0.45&nbsp;·&nbsp;R 0.26</td><td><span class="pill next">dropped &mdash; kept as a roadmap slide</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col"><strong>Module 2 findings:</strong> raw scores are already fairly honest (ECE 0.042); the
+  single global calibrator over-promises on test (0.090) and needs a per-class fit. False positives are
+  overwhelmingly low-confidence, so a per-class score threshold is the real noise filter. The geometric shadow
+  check can't be run until Module 3 supplies ping altitude/range. Overall FP rate improved
+  0.31&nbsp;&rarr;&nbsp;0.27 between Run 1 and Run 2.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">03</span> Pipeline &amp; dependencies &mdash; why Module 3 is the critical path</h2>
+  <figure>
+    <div class="fig-title">Data flow, module status, and what unblocks what</div>
+    <svg viewBox="0 0 900 430" role="img" aria-label="Pipeline flowchart. Raw sonar goes through Preprocess (built, not wired) into Module 1 Detect (locked). Detections flow into Module 2 confidence and filter, whose calibration and per-class thresholds are half-built, and whose shadow check is blocked. Module 3 Geotag and report is not started and is the critical path: it feeds real ping geometry to Module 2's shadow check, produces the JSON and CSV report, and feeds coordinates to Module 4's map. Module 4 Dashboard runs in parallel on mock data and swaps to the live API once Modules 2 and 3 emit records. A separate final retrain feeds back into Module 1 but blocks nothing.">
+      <defs>
+        <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+        <marker id="pd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+      </defs>
+
+      <!-- main chain -->
+      <rect x="16" y="40" width="120" height="58" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+      <text x="76" y="64" text-anchor="middle" class="lbl">raw sonar</text>
+      <text x="76" y="80" text-anchor="middle" class="sub m">XTF · image log</text>
+
+      <rect x="160" y="40" width="138" height="58" rx="7" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="229" y="60" text-anchor="middle" class="lbl">Preprocess</text>
+      <text x="229" y="75" text-anchor="middle" class="sub m">Lee · CLAHE · slant</text>
+      <text x="229" y="89" text-anchor="middle" class="sub">built, not wired</text>
+
+      <rect x="322" y="40" width="138" height="58" rx="7" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="391" y="60" text-anchor="middle" class="lbl">M1 · Detect</text>
+      <text x="391" y="75" text-anchor="middle" class="sub m">YOLOv8s · nc=4</text>
+      <text x="391" y="89" text-anchor="middle" class="sub">locked</text>
+
+      <rect x="484" y="30" width="170" height="78" rx="7" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="569" y="50" text-anchor="middle" class="lbl">M2 · Confidence</text>
+      <text x="569" y="66" text-anchor="middle" class="sub m">NMS · per-class calibrate</text>
+      <text x="569" y="80" text-anchor="middle" class="sub m">per-class threshold</text>
+      <text x="569" y="96" text-anchor="middle" class="sub">half-built &mdash; shadow blocked</text>
+
+      <line x1="136" y1="69" x2="156" y2="69" stroke="currentColor" stroke-width="1.5" marker-end="url(#pa)"/>
+      <line x1="298" y1="69" x2="318" y2="69" stroke="currentColor" stroke-width="1.5" marker-end="url(#pa)"/>
+      <line x1="460" y1="69" x2="480" y2="69" stroke="currentColor" stroke-width="1.5" marker-end="url(#pa)"/>
+
+      <!-- Module 3 : the hub -->
+      <rect x="360" y="200" width="220" height="86" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.5"/>
+      <text x="470" y="224" text-anchor="middle" class="lbl" font-weight="600">M3 · Geotag &amp; report</text>
+      <text x="470" y="242" text-anchor="middle" class="sub m">parse XTF / nav.csv</text>
+      <text x="470" y="256" text-anchor="middle" class="sub m">pixel &rarr; lat / lon</text>
+      <text x="470" y="272" text-anchor="middle" class="sub" fill="var(--accent)">START NOW &mdash; not started</text>
+
+      <!-- M2 output down to M3 -->
+      <path d="M569 108 V150 H470 V196" fill="none" stroke="currentColor" stroke-width="1.5" marker-end="url(#pa)"/>
+      <text x="478" y="140" class="sub">filtered detections + score</text>
+
+      <!-- M3 unblocks: shadow geometry back up to M2 -->
+      <path d="M472 200 C 430 165 500 140 560 112" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#pd)"/>
+      <text x="600" y="150" class="sub" fill="var(--accent)">feeds altitude / range</text>
+      <text x="600" y="163" class="sub" fill="var(--accent)">&rarr; unblocks shadow check</text>
+
+      <!-- M3 -> report -->
+      <rect x="130" y="330" width="150" height="60" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)"/>
+      <text x="205" y="354" text-anchor="middle" class="lbl">Report</text>
+      <text x="205" y="370" text-anchor="middle" class="sub m">JSON + CSV · schema.py</text>
+      <path d="M400 286 C 340 315 280 320 250 328" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#pd)"/>
+
+      <!-- M3 -> M4 -->
+      <rect x="640" y="200" width="150" height="86" rx="7" fill="var(--surface)" stroke="var(--rule-strong)"/>
+      <text x="715" y="222" text-anchor="middle" class="lbl">M4 · Dashboard</text>
+      <text x="715" y="238" text-anchor="middle" class="sub m">upload · map pins</text>
+      <text x="715" y="252" text-anchor="middle" class="sub m">download report</text>
+      <text x="715" y="270" text-anchor="middle" class="sub">parallel · on mocks</text>
+      <path d="M580 240 H636" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#pd)"/>
+      <text x="588" y="232" class="sub" fill="var(--accent)">coords + records</text>
+
+      <!-- retrain, isolated -->
+      <rect x="360" y="342" width="220" height="58" rx="7" fill="var(--surface-2)" stroke="var(--rule-strong)" stroke-dasharray="4 3"/>
+      <text x="470" y="365" text-anchor="middle" class="lbl">Final retrain &mdash; LAST</text>
+      <text x="470" y="382" text-anchor="middle" class="sub m">re-tile · copy-paste · imgsz 896</text>
+      <path d="M440 342 V104" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="3 3" marker-end="url(#pa)"/>
+      <text x="450" y="330" class="sub">re-trains M1 &mdash; blocks nothing</text>
+
+      <g class="sub">
+        <line x1="640" y1="330" x2="662" y2="330" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="668" y="334">unblocked by Module 3</text>
+        <line x1="640" y1="348" x2="662" y2="348" stroke="currentColor" stroke-width="1.5"/>
+        <text x="668" y="352">data flow</text>
+      </g>
+    </svg>
+    <figcaption>Module 3 is the hub: it turns detections into a geotagged report (a required deliverable),
+    feeds coordinates to the map, and supplies the ping geometry that Module 2's shadow check has been waiting
+    on. The retrain sits off to the side &mdash; it improves Module 1 but nothing waits on it.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">04</span> Action sequence</h2>
+  <ol class="steps col">
+    <li>
+      <h4>Module 3 &mdash; geotag &amp; report <span class="owner">ML lead</span> <span class="pill now">now</span></h4>
+      <p>Parse AURORA's XTF + <code>navigation.csv</code> (position, heading, altitude, range scale, ping
+      time). Project each detection: tile row &rarr; ping &rarr; vehicle fix; tile column &rarr; slant range
+      &rarr; ground offset &rarr; absolute lat/lon. Emit one record per hazard in <code>schema.py</code> as
+      JSON + CSV, each with an audit pointer back to its source ping.</p>
+    </li>
+    <li>
+      <h4>In parallel &mdash; three cheap wins <span class="owner">split</span> <span class="pill now">now</span></h4>
+      <p><strong>a.</strong> Per-class calibrator rework in <code>calibrate_confidence.py</code> (~20 min).
+      &nbsp;<strong>b.</strong> 15-min preprocess experiment: current model on preprocessed vs raw test
+      images &mdash; decides whether preprocessing goes into the retrain.
+      &nbsp;<strong>c.</strong> Module 4 keeps building on mocks; add the class-0 filter + <code>nc:4</code>
+      to the config.</p>
+    </li>
+    <li>
+      <h4>Wire-up as Module 3 lands <span class="owner">ML + FE</span> <span class="pill next">then</span></h4>
+      <p>Point Module 2's shadow check at real ping geometry and measure its FP reduction on AURORA-style
+      data. Swap Module 4's map from mock records to the live report output. Run the full
+      upload&rarr;detect&rarr;filter&rarr;geotag&rarr;report&rarr;map path end to end once.</p>
+    </li>
+    <li>
+      <h4>Final retrain &mdash; one GPU-night, near the deadline <span class="owner">ML lead</span> <span class="pill next">last</span></h4>
+      <p>Bundle everything: <code>nc=4</code> + AI4Shipwrecks overlap re-tile (152 &rarr; 600&ndash;1000+ tiles)
+      + cylinder copy-paste from real chips + NonMILCO class + <code>imgsz 896</code> + preprocessing baked in
+      (if the experiment favoured it). Then re-fit the per-class calibrator (30 s) and re-run
+      <code>eval_module2.py</code>. Output schema is unchanged, so nothing downstream touches this.</p>
+    </li>
+  </ol>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">05</span> Decision gates</h2>
+  <div class="gate col"><b>Retrain: yes or no?</b> &mdash; decided after step 2b + Module 2 wire-up.
+  <ul class="tick">
+    <li><b>Skip it</b> if shipwreck &amp; cylinder clear ~0.75 precision at recall ~0.5 after per-class
+    thresholding + shadow check, <em>and</em> preprocessing doesn't clearly help. Lock Module 1, all effort to 3 &amp; 4.</li>
+    <li><b>Do it</b> if either stays under ~0.6 precision, or preprocessing clearly helps. Current reading:
+    shipwreck P .73/R .43 and cylinder P .75/R .38 are <em>borderline</em> &rarr; leaning <b>do it</b>, but only
+    if Modules 3 &amp; 4 are on track.</li>
+  </ul></div>
+  <div class="gate col"><b>Preprocessing: in or out?</b> &mdash; the 15-min experiment decides. If preprocessed
+  input holds or improves mAP on the current model &rarr; bake into the retrain (train + serve together). If it
+  drifts &rarr; keep as a Module 4 display enhancement + roadmap line.</div>
+  <div class="note col">
+    <h3>Standing priority</h3>
+    <p style="margin:6px 0">Modules 3 / 4 &nbsp;&gt;&nbsp; retrain + preprocess &nbsp;&gt;&nbsp; anything
+    else. A working end-to-end pipeline with a P .73 detector passes the problem statement; a P .82 detector
+    with no geotagging, report, or map does not.</p>
+  </div>
+</section>
+
+<footer>
+  DRISHTI &middot; status &amp; plan &middot; 2026-08-31 &middot; companions: run1_detector_report ·
+  run2_detector_report · training_glossary
+</footer>
+</body>
+</html>

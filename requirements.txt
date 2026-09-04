@@ -1,0 +1,11 @@
+# ─── DRISHTI: combined environment (one-laptop convenience) ───
+# For per-track isolation prefer the individual files — the ML deps are heavy and
+# most backend/frontend work never needs torch or ultralytics installed locally.
+#
+#   backend + worker only : pip install -r apps/api/requirements.txt
+#   edge inference only    : pip install -r edge/requirements.txt
+#   training / export      : pip install -r ml/requirements.txt
+
+-r apps/api/requirements.txt
+-r ml/requirements.txt
+-r edge/requirements.txt

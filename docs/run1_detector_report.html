@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRISHTI Detector · Run 1</title>
+<meta name="description" content="Plain-language report on the first side-scan-sonar detector training run, plus the plan for the confidence-filtering and geotagging modules.">
+<style>
+  html,body{margin:0}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+  :root {
+    color-scheme: light;
+    --page:#f3f6f7;
+    --surface:#fcfdfd;
+    --surface-2:#eaeef0;
+    --ink:#0f1519;
+    --ink-2:#48535a;
+    --muted:#7b868c;
+    --rule:#dbe2e5;
+    --rule-strong:#c3ccd0;
+    --accent:#0e7c8b;
+    --accent-soft:#e2f0f2;
+    --good:#0a7d1f;
+    --good-soft:#e3f2e6;
+    --warn:#9a6400;
+    --warn-soft:#f6ecda;
+    --crit:#c22f2f;
+    --crit-soft:#f7e3e3;
+    --s1:#2a78d6;
+    --s2:#eb6834;
+    --seq:#256abf;
+    --shadow:0 1px 2px rgba(15,25,30,.06), 0 8px 24px -12px rgba(15,25,30,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page:#090e11;
+      --surface:#11181c;
+      --surface-2:#1a242a;
+      --ink:#eef3f5;
+      --ink-2:#a9b5bb;
+      --muted:#79848a;
+      --rule:#252f36;
+      --rule-strong:#33404a;
+      --accent:#3fb6c6;
+      --accent-soft:#123037;
+      --good:#3fbf57;
+      --good-soft:#12331a;
+      --warn:#e0a01e;
+      --warn-soft:#33290f;
+      --crit:#e35b5b;
+      --crit-soft:#361a1a;
+      --s1:#3987e5;
+      --s2:#d95926;
+      --seq:#3987e5;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:#090e11;
+    --surface:#11181c;
+    --surface-2:#1a242a;
+    --ink:#eef3f5;
+    --ink-2:#a9b5bb;
+    --muted:#79848a;
+    --rule:#252f36;
+    --rule-strong:#33404a;
+    --accent:#3fb6c6;
+    --accent-soft:#123037;
+    --good:#3fbf57;
+    --good-soft:#12331a;
+    --warn:#e0a01e;
+    --warn-soft:#33290f;
+    --crit:#e35b5b;
+    --crit-soft:#361a1a;
+    --s1:#3987e5;
+    --s2:#d95926;
+    --seq:#3987e5;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+    font-size:16.5px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px 96px}
+  .col{max-width:760px}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+
+  /* ---- masthead ---- */
+  header.mast{
+    max-width:1000px;margin:0 auto;padding:56px 24px 30px;
+  }
+  .kicker{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 18px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .kicker::after{content:"";height:1px;flex:1;background:var(--rule);}
+  h1{
+    font-size:clamp(2rem,5.4vw,3.1rem);
+    line-height:1.06;letter-spacing:-.02em;font-weight:600;
+    margin:0 0 18px;text-wrap:balance;
+  }
+  .standfirst{font-size:1.18rem;color:var(--ink-2);margin:0 0 26px;max-width:60ch;text-wrap:pretty}
+  .specbar{
+    display:flex;flex-wrap:wrap;gap:8px 10px;
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+  }
+  .specbar span{
+    background:var(--surface-2);border:1px solid var(--rule);
+    border-radius:5px;padding:4px 9px;color:var(--ink-2);
+  }
+  .specbar b{color:var(--ink);font-weight:600}
+
+  /* ---- structure ---- */
+  section{max-width:1000px;margin:0 auto;padding:34px 24px 0}
+  h2{
+    font-size:1.02rem;font-weight:600;letter-spacing:.02em;
+    margin:44px 0 4px;padding-top:22px;border-top:1px solid var(--rule-strong);
+    display:flex;align-items:baseline;gap:12px;
+  }
+  h2 .n{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);
+    letter-spacing:.1em;
+  }
+  h3{font-size:1.05rem;font-weight:600;margin:30px 0 6px}
+  p{margin:12px 0;max-width:70ch}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+  .lede{font-size:1.06rem;color:var(--ink-2)}
+
+  /* ---- callout ---- */
+  .tldr{
+    background:var(--surface);border:1px solid var(--rule);
+    border-left:3px solid var(--accent);
+    border-radius:8px;padding:22px 24px;margin:26px 0 8px;
+    box-shadow:var(--shadow);
+  }
+  .tldr h2{border:0;margin:0 0 10px;padding:0}
+  .tldr p{margin:10px 0}
+  .tldr p:first-of-type{margin-top:0}
+
+  /* ---- readout tiles ---- */
+  .readout{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:1px;background:var(--rule);border:1px solid var(--rule);
+    border-radius:8px;overflow:hidden;margin:22px 0;
+  }
+  .readout div{background:var(--surface);padding:14px 16px}
+  .readout .v{font-family:"IBM Plex Mono",monospace;font-size:1.5rem;font-weight:500;letter-spacing:-.01em}
+  .readout .l{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .readout .v.pos{color:var(--good)}
+  .readout .v.neg{color:var(--crit)}
+
+  /* ---- tables ---- */
+  .tbl-scroll{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule)}
+  thead th{
+    background:var(--surface-2);font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-2);font-weight:600;
+    position:sticky;top:0;
+  }
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+  tbody td:first-child{font-weight:500}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11.5px;font-weight:600;letter-spacing:.03em;
+    padding:2px 9px;border-radius:999px;white-space:nowrap;
+  }
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+  .pill.good{color:var(--good);background:var(--good-soft)}
+  .pill.warn{color:var(--warn);background:var(--warn-soft)}
+  .pill.crit{color:var(--crit);background:var(--crit-soft)}
+  .pill.flat{color:var(--ink-2);background:var(--surface-2)}
+
+  /* ---- figure ---- */
+  figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 20px 14px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;overflow:visible}
+  figcaption{font-size:13px;color:var(--muted);margin-top:12px;max-width:68ch}
+  .fig-title{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+
+  svg text{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  .axis{fill:var(--muted);font-size:11px}
+  .axis-lbl{fill:var(--ink-2);font-size:11px}
+  .grid{stroke:var(--rule)}
+  .baseline{stroke:var(--rule-strong)}
+  .val{fill:var(--ink);font-size:11.5px;font-weight:600}
+
+  /* ---- pipeline strip ---- */
+  .flow{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0;font-size:13px}
+  .flow .node{
+    flex:1;min-width:130px;background:var(--surface);border:1px solid var(--rule);
+    border-radius:8px;padding:12px 13px;position:relative;
+  }
+  .flow .node .t{font-weight:600;margin-bottom:3px}
+  .flow .node .s{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+  .flow .node.done{border-color:color-mix(in srgb,var(--good) 45%,var(--rule))}
+  .flow .node.now{border-color:color-mix(in srgb,var(--accent) 55%,var(--rule));box-shadow:0 0 0 3px var(--accent-soft)}
+  .flow .node .tag{
+    position:absolute;top:-9px;left:12px;font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;padding:1px 6px;border-radius:4px;font-weight:700;
+  }
+  .flow .node.done .tag{background:var(--good-soft);color:var(--good)}
+  .flow .node.now .tag{background:var(--accent-soft);color:var(--accent)}
+  .flow .node.next .tag{background:var(--surface-2);color:var(--muted)}
+
+  /* ---- step list ---- */
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:22px 0}
+  ol.steps>li{
+    counter-increment:s;position:relative;padding:4px 0 20px 46px;
+    border-left:1px solid var(--rule);margin-left:14px;
+  }
+  ol.steps>li::before{
+    content:counter(s);position:absolute;left:-15px;top:0;
+    width:29px;height:29px;border-radius:50%;
+    background:var(--surface);border:1px solid var(--rule-strong);
+    color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;
+  }
+  ol.steps>li:last-child{border-left-color:transparent}
+  ol.steps>li h4{margin:0 0 3px;font-size:1rem;font-weight:600}
+  ol.steps>li p{margin:4px 0;font-size:14.5px;color:var(--ink-2)}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.86em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+  ul.tick{list-style:none;padding:0;margin:16px 0}
+  ul.tick li{padding:6px 0 6px 26px;position:relative;border-bottom:1px solid var(--rule);font-size:14.5px}
+  ul.tick li:last-child{border-bottom:0}
+  ul.tick li::before{content:"";position:absolute;left:4px;top:13px;width:8px;height:8px;border:1.5px solid var(--accent);border-radius:2px}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:22px 0}
+  @media(max-width:720px){.two{grid-template-columns:1fr}.readout .v{font-size:1.3rem}}
+
+  footer{max-width:1000px;margin:40px auto 0;padding:24px;border-top:1px solid var(--rule-strong);color:var(--muted);font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+  @media (prefers-reduced-motion:no-preference){
+    .flow .node{transition:border-color .2s}
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<header class="mast">
+  <p class="kicker">DRISHTI &nbsp;/&nbsp; SIH 2026 &nbsp;/&nbsp; PS 26057</p>
+  <h1>Detector Run 1 &mdash; what came back</h1>
+  <p class="standfirst">The first real training run of the side-scan-sonar object detector is done. One class works
+  well, one looks perfect for the wrong reason, three are weak. Here is the plain-language readout, the
+  fixes going into Run 2, and how the confidence and geotagging modules get built next.</p>
+  <div class="specbar mono">
+    <span><b>Model</b> YOLOv8s (box detection)</span>
+    <span><b>Classes</b> 5</span>
+    <span><b>Epochs</b> 120</span>
+    <span><b>Train time</b> 2.5 h · RTX 4050</span>
+    <span><b>Speed</b> 3.9 ms / frame</span>
+    <span><b>Date</b> 2026-08-31</span>
+  </div>
+</header>
+
+<section>
+  <div class="tldr col">
+    <h2>The short version</h2>
+    <p><strong>Pipeline detection genuinely works</strong> &mdash; 0.98 AP<sub>50</sub> on held-out real sonar,
+    near-perfect recall. That is a real, defensible result and it is our lead story.</p>
+    <p><strong>Ghost-net's 0.99 is not real.</strong> That class has no real training data &mdash; train and test are
+    both procedurally generated by the same script, so the model just re-recognises its own synthetic pattern.
+    It is a shape proof-of-concept, never a field number.</p>
+    <p><strong>Crab-pot failed</strong> (0.12 AP<sub>50</sub>, finds under 1 in 4). <strong>Shipwreck and
+    cylinder are weak</strong> (~0.44, ~50% recall). All three causes are self-inflicted and fixable.</p>
+    <p>This is a checkpoint, not the finish. One more retrain with data fixes, then Module 1 is locked and the
+    team moves to Modules 2&ndash;4.</p>
+  </div>
+</section>
+
+<section class="col">
+  <h2><span class="n">01</span> What we actually trained</h2>
+  <p>A <strong>detector</strong> looks at a sonar image tile and draws a labelled box around each man-made object
+  it finds, with a raw score. We are doing boxes, not pixel-perfect outlines &mdash; the problem statement allows
+  either, and every real sonar dataset we could get is box-labelled.</p>
+  <p>Five target types, matching the hazards the problem statement names:</p>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>ID</th><th>Class</th><th>Where the training data comes from</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0</td><td>crab_pot</td><td>HuggingFace crab-pot SSS set (derelict fishing gear)</td></tr>
+        <tr><td class="mono">1</td><td>submarine_pipeline</td><td>SubPipeMini2 survey strips, cut into tiles</td></tr>
+        <tr><td class="mono">2</td><td>shipwreck</td><td>AI4Shipwrecks + Roboflow SSS (ship &amp; plane wreckage)</td></tr>
+        <tr><td class="mono">3</td><td>ghost_net</td><td class="mono">synthetic only &mdash; no real SSS net dataset exists</td></tr>
+        <tr><td class="mono">4</td><td>mine_cylinder</td><td>Kaggle sonar-mine set (cylindrical objects) + synthetic top-up</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The training set for Run 1 held roughly <span class="mono">1,600 crab-pot</span>,
+  <span class="mono">1,000 pipeline</span>, <span class="mono">1,170 shipwreck</span>,
+  <span class="mono">900 ghost-net</span> and <span class="mono">615 cylinder</span> labelled objects, plus
+  400 object-free "background" tiles so the model learns what empty seabed looks like.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">02</span> Results on the held-out test set</h2>
+  <p class="col lede">705 real sonar images the model never saw in training. These are the numbers that go in
+  the deck.</p>
+
+  <div class="readout col">
+    <div><div class="v mono">0.596</div><div class="l">mAP@50 (overall)</div></div>
+    <div><div class="v mono">0.440</div><div class="l">mAP@50&ndash;95</div></div>
+    <div><div class="v mono">0.69</div><div class="l">precision</div></div>
+    <div><div class="v mono">0.64</div><div class="l">recall</div></div>
+    <div><div class="v mono neg">0.31</div><div class="l">false-positive rate</div></div>
+  </div>
+
+  <figure>
+    <div class="fig-title">Detection quality by class &mdash; AP@50 on real test data</div>
+    <svg viewBox="0 0 700 300" role="img" aria-label="Bar chart of AP50 per class. Submarine pipeline 0.98, shipwreck 0.45, mine cylinder 0.43, crab pot 0.12. Ghost net 0.995 shown separately as synthetic-only.">
+      <!-- gridlines -->
+      <g class="grid" stroke-width="1">
+        <line x1="175" y1="24" x2="175" y2="232"/>
+        <line x1="296" y1="24" x2="296" y2="232"/>
+        <line x1="417.5" y1="24" x2="417.5" y2="232"/>
+        <line x1="539" y1="24" x2="539" y2="232"/>
+        <line x1="660" y1="24" x2="660" y2="232"/>
+      </g>
+      <g class="axis" text-anchor="middle">
+        <text x="175" y="248">0</text>
+        <text x="296" y="248">.25</text>
+        <text x="417.5" y="248">.50</text>
+        <text x="539" y="248">.75</text>
+        <text x="660" y="248">1.0</text>
+      </g>
+      <!-- usable threshold -->
+      <line x1="417.5" y1="20" x2="417.5" y2="232" stroke="var(--accent)" stroke-width="1.3" stroke-dasharray="3 3"/>
+      <text x="417.5" y="16" class="axis-lbl" fill="var(--accent)" text-anchor="middle">0.50 — usable</text>
+
+      <!-- real-data bars -->
+      <g text-anchor="end" class="axis-lbl">
+        <text x="165" y="45">submarine_pipeline</text>
+        <text x="165" y="95">shipwreck</text>
+        <text x="165" y="145">mine_cylinder</text>
+        <text x="165" y="195">crab_pot</text>
+      </g>
+      <rect x="175" y="26" width="476" height="26" rx="4" fill="var(--good)"/>
+      <rect x="175" y="76" width="220" height="26" rx="4" fill="var(--warn)"/>
+      <rect x="175" y="126" width="209" height="26" rx="4" fill="var(--warn)"/>
+      <rect x="175" y="176" width="57"  height="26" rx="4" fill="var(--crit)"/>
+      <g class="val" text-anchor="start">
+        <text x="659" y="44">0.982</text>
+        <text x="403" y="94">0.453</text>
+        <text x="392" y="144">0.431</text>
+        <text x="240" y="194">0.118</text>
+      </g>
+
+      <!-- divider -->
+      <line x1="30" y1="223" x2="660" y2="223" class="baseline" stroke-dasharray="2 3"/>
+
+      <!-- synthetic bar -->
+      <defs>
+        <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <rect width="7" height="7" fill="var(--surface-2)"/>
+          <line x1="0" y1="0" x2="0" y2="7" stroke="var(--muted)" stroke-width="2.5"/>
+        </pattern>
+      </defs>
+      <text x="165" y="269" text-anchor="end" class="axis-lbl">ghost_net</text>
+      <rect x="175" y="250" width="482" height="26" rx="4" fill="url(#hatch)" stroke="var(--rule-strong)"/>
+      <text x="430" y="268" class="val" fill="var(--ink-2)">0.995 — synthetic only, not a field result</text>
+    </svg>
+    <figcaption>Bars are AP@50 (how reliably a class is found and correctly boxed at a moderate overlap
+    threshold). Green = usable now; amber = needs work; red = failing. The hatched bar is measured on
+    procedurally-generated nets, so it reflects pattern memorisation, not real-world skill.</figcaption>
+  </figure>
+
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Class</th><th class="num">AP@50</th><th class="num">Precision</th><th class="num">Recall</th><th>Read it as</th></tr></thead>
+      <tbody>
+        <tr><td>submarine_pipeline</td><td class="num">0.982</td><td class="num">0.92</td><td class="num">0.99</td><td><span class="pill good">production-ready</span></td></tr>
+        <tr><td>shipwreck</td><td class="num">0.453</td><td class="num">0.57</td><td class="num">0.51</td><td><span class="pill warn">finds half, over-fires on rock</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="num">0.431</td><td class="num">0.58</td><td class="num">0.48</td><td><span class="pill warn">thin data, misses 40%</span></td></tr>
+        <tr><td>crab_pot</td><td class="num">0.118</td><td class="num">0.37</td><td class="num">0.23</td><td><span class="pill crit">failing &mdash; misses 77%</span></td></tr>
+        <tr><td>ghost_net</td><td class="num">0.995</td><td class="num">1.00</td><td class="num">1.00</td><td><span class="pill flat">synthetic echo &mdash; ignore</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col"><strong>Precision</strong> = when it fires, how often it is right. <strong>Recall</strong> = of
+  the objects that are really there, how many it finds. Pipeline scores high on both. Crab-pot's 0.37 / 0.23
+  means it rarely fires, and when it does it is wrong two times in three.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">03</span> How the training run itself went</h2>
+  <figure>
+    <div class="fig-title">Validation accuracy across 120 epochs</div>
+    <svg viewBox="0 0 700 300" role="img" aria-label="Line chart of validation mAP over 120 epochs. mAP@50 rises from 0.46 to about 0.77 by epoch 80 then flattens. mAP@50-95 rises from 0.27 to about 0.53.">
+      <g class="grid" stroke-width="1">
+        <line x1="52" y1="262" x2="670" y2="262"/>
+        <line x1="52" y1="215.2" x2="670" y2="215.2"/>
+        <line x1="52" y1="168.4" x2="670" y2="168.4"/>
+        <line x1="52" y1="121.6" x2="670" y2="121.6"/>
+        <line x1="52" y1="74.8" x2="670" y2="74.8"/>
+        <line x1="52" y1="28" x2="670" y2="28"/>
+      </g>
+      <g class="axis" text-anchor="end">
+        <text x="46" y="266">0</text>
+        <text x="46" y="219">.2</text>
+        <text x="46" y="172">.4</text>
+        <text x="46" y="125">.6</text>
+        <text x="46" y="78">.8</text>
+        <text x="46" y="32">1.0</text>
+      </g>
+      <g class="axis" text-anchor="middle">
+        <text x="52" y="280">1</text>
+        <text x="150.7" y="280">20</text>
+        <text x="254.5" y="280">40</text>
+        <text x="358.3" y="280">60</text>
+        <text x="462.1" y="280">80</text>
+        <text x="565.9" y="280">100</text>
+        <text x="669.7" y="280">120</text>
+      </g>
+      <text x="360" y="296" class="axis-lbl" text-anchor="middle">epoch</text>
+
+      <!-- close_mosaic -->
+      <line x1="592" y1="28" x2="592" y2="262" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 4"/>
+      <text x="588" y="40" class="axis" text-anchor="end">mosaic off</text>
+
+      <!-- mAP50-95 -->
+      <polyline fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"
+        points="52,199.7 98.7,178 150.7,166.8 202.6,162.6 254.5,158.1 306.4,151.3 358.3,151.6 410.2,147.1 462.1,143.8 514,140.3 565.9,138.7 617.8,138.9 669.7,139.2"/>
+      <!-- mAP50 -->
+      <polyline fill="none" stroke="var(--s1)" stroke-width="2.4" stroke-linejoin="round"
+        points="52,153.4 98.7,125.6 150.7,104.5 202.6,103.8 254.5,95 306.4,92.5 358.3,94.2 410.2,85.6 462.1,82.8 514,86 565.9,82.5 617.8,82.8 669.7,83.5"/>
+      <circle cx="565.9" cy="82.5" r="3.5" fill="var(--s1)"/>
+      <text x="560" y="72" class="val" text-anchor="end">peak 0.776 @ e105</text>
+
+      <g font-size="11.5">
+        <rect x="470" y="228" width="10" height="10" rx="2" fill="var(--s1)"/>
+        <text x="486" y="237" class="axis-lbl">mAP@50</text>
+        <rect x="560" y="228" width="10" height="10" rx="2" fill="var(--s2)"/>
+        <text x="576" y="237" class="axis-lbl">mAP@50&ndash;95</text>
+      </g>
+    </svg>
+    <figcaption>Both curves climb steeply for ~40 epochs, then flatten by epoch 80&ndash;100. Training and
+    validation loss stayed close together the whole way &mdash; no overfitting. 120 epochs was slightly more
+    than needed; ~100 would have been enough.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">04</span> Where the model gets confused</h2>
+  <figure>
+    <div class="fig-title">Of the objects that are really there, what the model does with them</div>
+    <svg viewBox="0 0 700 250" role="img" aria-label="Stacked bars showing detection outcome per true class. Pipeline and ghost_net 100 percent found. Shipwreck 70 percent found 30 missed. Mine cylinder 61 found 39 missed. Crab pot 40 found 60 missed.">
+      <g text-anchor="end" class="axis-lbl">
+        <text x="165" y="34">submarine_pipeline</text>
+        <text x="165" y="74">ghost_net *</text>
+        <text x="165" y="114">shipwreck</text>
+        <text x="165" y="154">mine_cylinder</text>
+        <text x="165" y="194">crab_pot</text>
+      </g>
+      <!-- tracks: x 175..660 = 485px = 100% -->
+      <g>
+        <rect x="175" y="18" width="485" height="24" rx="4" fill="var(--good)"/>
+        <rect x="175" y="58" width="485" height="24" rx="4" fill="url(#hatch2)"/>
+        <rect x="175" y="98" width="339.5" height="24" rx="4" fill="var(--good)"/>
+        <rect x="516.5" y="98" width="145.5" height="24" rx="4" fill="var(--crit)"/>
+        <rect x="175" y="138" width="295.85" height="24" rx="4" fill="var(--good)"/>
+        <rect x="472.85" y="138" width="189.15" height="24" rx="4" fill="var(--crit)"/>
+        <rect x="175" y="178" width="194" height="24" rx="4" fill="var(--good)"/>
+        <rect x="371" y="178" width="291" height="24" rx="4" fill="var(--crit)"/>
+      </g>
+      <defs>
+        <pattern id="hatch2" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <rect width="7" height="7" fill="var(--good)"/>
+          <line x1="0" y1="0" x2="0" y2="7" stroke="var(--surface)" stroke-width="2"/>
+        </pattern>
+      </defs>
+      <g class="val" text-anchor="middle" fill="#fff">
+        <text x="417" y="35">100%</text>
+        <text x="417" y="115">70%</text>
+        <text x="323" y="155">61%</text>
+        <text x="272" y="195">40%</text>
+      </g>
+      <g class="val" text-anchor="middle" fill="#fff">
+        <text x="589" y="115">30%</text>
+        <text x="567" y="155">39%</text>
+        <text x="516" y="195">60%</text>
+      </g>
+      <g font-size="11.5">
+        <rect x="175" y="222" width="10" height="10" rx="2" fill="var(--good)"/>
+        <text x="191" y="231" class="axis-lbl">found &amp; labelled</text>
+        <rect x="315" y="222" width="10" height="10" rx="2" fill="var(--crit)"/>
+        <text x="331" y="231" class="axis-lbl">missed entirely (called "background")</text>
+      </g>
+      <text x="175" y="248" class="axis" >* ghost_net measured on synthetic data</text>
+    </svg>
+    <figcaption>Crab-pot is missed 60% of the time &mdash; it is small and low-contrast, and it simply is not
+    firing. Separately, shipwreck is the biggest source of <em>false alarms</em>: it fires "shipwreck" on
+    rocky background almost half the time. The full 6&times;6 confusion matrix is in
+    <code>models/checkpoints/&hellip;/confusion_matrix.png</code>.</figcaption>
+  </figure>
+</section>
+
+<section class="col">
+  <h2><span class="n">05</span> What changes for Run 2</h2>
+  <p>Every failure above traces to a data decision we made, not to the model. Fixes already applied to
+  <code>build_dataset.py</code>; splits are rebuilt and ready.</p>
+  <ul class="tick">
+    <li><strong>Crab-pot data nearly doubled</strong> &mdash; 900 &rarr; 1,600 training images (of ~5,700
+    available). It was starved.</li>
+    <li><strong>Dropped the weak shipwreck crops</strong> &mdash; the KLSG "whole frame is the object" boxes
+    taught it "big blob = wreck", which caused the rock-cluster false alarms. Shipwreck now uses only tightly
+    boxed sources.</li>
+    <li><strong>Cylinder + background topped up</strong> &mdash; 350 extra synthetic cylinders, 500 background
+    tiles (was 400).</li>
+    <li><strong>Ghost-net unchanged</strong> &mdash; still synthetic, still labelled as such everywhere.</li>
+  </ul>
+  <p><strong>Decision rule after Run 2 &mdash; then Module 1 is locked, no third attempt:</strong></p>
+  <ul class="tick">
+    <li>crab-pot AP@50 <span class="mono">&ge; 0.35</span> &rarr; keep all 5 classes.</li>
+    <li>crab-pot AP@50 still <span class="mono">&lt; 0.25</span> &rarr; ship <span class="mono">4 classes</span>
+    (drop crab-pot). Pipeline + shipwreck + cylinder + net map exactly onto the hazards the problem statement
+    names, which is a cleaner pitch than 5 classes carrying a broken one.</li>
+  </ul>
+  <p class="mono" style="font-size:13.5px;background:var(--surface-2);border:1px solid var(--rule);border-radius:6px;padding:12px 14px">
+    python ml/scripts/train_yolo_seg.py --model yolov8s.pt --epochs 120 --batch 16 --patience 25 --workers 2</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">06</span> The whole pipeline &mdash; where each module sits</h2>
+  <p class="col">The detector is one stage of four. The problem statement asks for all four as a working system.</p>
+  <div class="flow">
+    <div class="node next"><span class="tag">built · not wired</span><div class="t">Preprocess</div><div class="s">Lee filter · CLAHE<br>slant-range gain</div></div>
+    <div class="node done"><span class="tag">Module 1 · v1</span><div class="t">Detect</div><div class="s">YOLOv8s → boxes<br>+ raw score</div></div>
+    <div class="node now"><span class="tag">Module 2</span><div class="t">Confidence &amp; filter</div><div class="s">calibrate → 0–100%<br>kill false alarms</div></div>
+    <div class="node next"><span class="tag">Module 3</span><div class="t">Geotag &amp; report</div><div class="s">pixel → lat/lon<br>JSON + CSV</div></div>
+    <div class="node next"><span class="tag">Module 4</span><div class="t">Dashboard</div><div class="s">upload · map pins<br>download report</div></div>
+  </div>
+  <p class="col">Module 1 retrains this week (unattended). Modules 2 and 3 start now, in parallel, against the
+  current checkpoint &mdash; its output format is frozen in <code>docs/api_contract.md</code> and will not
+  change whether the model ships with 4 classes or 5. Module 4 is already being built in parallel against mock
+  data.</p>
+  <p class="col"><strong>Preprocessing note:</strong> the Lee-filter / CLAHE / slant-range code
+  (<code>ml/scripts/preprocess_sonar.py</code>) is written and shared between train and inference paths, but it
+  was <strong>not applied to the Run 1 data</strong> &mdash; Run 1 trained on raw dataset images plus YOLOv8's
+  built-in augmentation. Decision for Run 2: either bake <code>preprocess_tile()</code> into
+  <code>build_dataset.py</code> so every training image is filtered, or keep training on raw and apply the
+  filter at inference only (which then also has to be applied to the eval set to stay consistent). A small
+  with/without ablation gives us the "we handled speckle" evidence the problem statement asks for.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">07</span> Module 2 &mdash; Confidence Scoring &amp; Noise Filtering</h2>
+  <p class="col"><strong>What the problem statement asks:</strong> minimise false positives from natural
+  acoustic shadows and rock clusters, and output a clear 0&ndash;100% confidence score for every detection.</p>
+  <p class="col"><strong>Our approach &mdash; three stages after the detector, no second neural network:</strong></p>
+  <ol class="steps col">
+    <li>
+      <h4>De-duplicate (NMS)</h4>
+      <p>Merge overlapping boxes that describe the same object, keeping the strongest. Standard, already in the
+      detector output path.</p>
+    </li>
+    <li>
+      <h4>Calibrate the score &rarr; real probability</h4>
+      <p>A raw detector score of "0.8" is not an 80% chance of being right &mdash; neural nets run
+      over-confident. We fit a one-parameter logistic curve (Platt scaling) on the validation set that maps raw
+      score &rarr; observed hit rate. Output is the honest 0&ndash;100% the problem statement wants. Quality is
+      measured by <strong>Expected Calibration Error</strong> and shown as a reliability diagram (predicted vs
+      actual, should sit on the diagonal). Code stub: <code>ml/scripts/calibrate_confidence.py</code>.</p>
+    </li>
+    <li>
+      <h4>Shadow-geometry check &rarr; demote physics violations</h4>
+      <p>This is the anti-false-alarm step, and it is pure geometry &mdash; no training needed. A real raised
+      object on the seabed casts an acoustic shadow whose length is fixed by the sonar's height, its range, and
+      the object's own height. A rock cluster gives a strong return but its shadow does not match what geometry
+      predicts. If a detection's measured shadow is inconsistent, its confidence is knocked down regardless of
+      how bright the return was. Code stub: <code>ml/inference/shadow_verification.py</code>.</p>
+    </li>
+  </ol>
+
+  <figure>
+    <div class="fig-title">The shadow check, in one picture</div>
+    <svg viewBox="0 0 700 260" role="img" aria-label="Diagram: sonar towfish at height H above seabed, sound ray at slant range R hits an object of height h, which casts a shadow of length L equal to h times R divided by quantity H minus h.">
+      <!-- water surface -->
+      <line x1="20" y1="24" x2="680" y2="24" stroke="var(--rule-strong)" stroke-width="1"/>
+      <text x="24" y="18" class="axis">tow vessel / AUV track</text>
+      <!-- towfish -->
+      <rect x="70" y="30" width="34" height="16" rx="4" fill="var(--accent)"/>
+      <text x="87" y="58" class="axis-lbl" text-anchor="middle">sonar</text>
+      <!-- seabed -->
+      <line x1="20" y1="200" x2="680" y2="200" stroke="var(--ink-2)" stroke-width="2"/>
+      <text x="24" y="216" class="axis">seabed</text>
+      <!-- altitude H -->
+      <line x1="87" y1="46" x2="87" y2="200" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="80" y="130" class="axis-lbl" text-anchor="end">H<tspan class="axis"> = altitude</tspan></text>
+      <!-- slant range R -->
+      <line x1="87" y1="46" x2="430" y2="196" stroke="var(--s1)" stroke-width="2"/>
+      <text x="250" y="105" class="axis-lbl" fill="var(--s1)" transform="rotate(23 250 105)">R = slant range</text>
+      <!-- object -->
+      <rect x="430" y="168" width="20" height="32" fill="var(--ink)"/>
+      <line x1="430" y1="168" x2="430" y2="200" stroke="var(--good)" stroke-width="3"/>
+      <text x="424" y="165" class="axis-lbl" fill="var(--good)" text-anchor="end">h</text>
+      <!-- shadow -->
+      <rect x="450" y="196" width="150" height="8" fill="var(--muted)" opacity="0.5"/>
+      <line x1="450" y1="212" x2="600" y2="212" stroke="var(--muted)" stroke-width="1"/>
+      <line x1="450" y1="208" x2="450" y2="216" stroke="var(--muted)" stroke-width="1"/>
+      <line x1="600" y1="208" x2="600" y2="216" stroke="var(--muted)" stroke-width="1"/>
+      <text x="525" y="228" class="axis-lbl" text-anchor="middle">L = measured shadow</text>
+      <!-- formula -->
+      <text x="660" y="120" class="val" text-anchor="end" font-size="15">L(expected) = h &#183; R / (H &minus; h)</text>
+      <text x="660" y="140" class="axis" text-anchor="end">real object: measured L &asymp; expected L  &rarr;  keep score</text>
+      <text x="660" y="156" class="axis" text-anchor="end">rock cluster: measured L off  &rarr;  demote score</text>
+    </svg>
+    <figcaption>The check needs the sonar altitude and slant range, which come from the same metadata Module 3
+    parses &mdash; so Modules 2 and 3 share a metadata reader.</figcaption>
+  </figure>
+
+  <h3 class="col">Deliverables</h3>
+  <ul class="tick col">
+    <li>Calibrated 0&ndash;100% score on every detection, wired into <code>ml/inference/confidence_filter.py</code>.</li>
+    <li>Calibration quality: ECE number + reliability diagram for the deck.</li>
+    <li>False-positive rate before vs after the shadow check, measured on the background tiles and the unused
+    Roboflow / KLSG seabed imagery as a hard-negative set.</li>
+  </ul>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">08</span> Module 3 &mdash; Reporting &amp; Geotagging Engine</h2>
+  <p class="col"><strong>What the problem statement asks:</strong> read sonar metadata (coordinate files or
+  ping headers) and output a structured JSON/CSV report giving each hazard's latitude/longitude, size, and
+  class.</p>
+  <p class="col"><strong>Our approach:</strong></p>
+  <ol class="steps col">
+    <li>
+      <h4>Parse the navigation metadata</h4>
+      <p>Side-scan sonar logs (XTF format) carry per-ping headers: position fix, heading, altitude, range
+      scale, timestamp. Where a raw log has no embedded fix, a sidecar navigation CSV provides it. Parsers:
+      <code>backend/geotagging/xtf_reader.py</code>, <code>metadata_parser.py</code>. Real test fixture:
+      the <strong>AURORA</strong> dataset, which ships a real <code>navigation.csv</code> + XTF pair.</p>
+    </li>
+    <li>
+      <h4>Project each detection from pixels to Earth coordinates</h4>
+      <p>A detection sits at some (row, column) in a sonar tile. Row &rarr; ping number &rarr; timestamp &rarr;
+      the vehicle's position and heading at that instant. Column &rarr; slant range &rarr; true distance across
+      the seabed (corrected for altitude) &rarr; offset left/right of the track. Combine and you get absolute
+      lat/lon for the hazard. Box width/height convert to metres the same way. Math:
+      <code>backend/geotagging/coordinate_projection.py</code>.</p>
+    </li>
+    <li>
+      <h4>Emit the structured report</h4>
+      <p>One record per hazard in the locked schema (<code>backend/reporting/schema.py</code>): id, source
+      file, ping id, timestamp, lat, lon, class, calibrated confidence, box geometry, review status. Exported
+      as both JSON and CSV. Every record keeps a pointer back to its source ping for audit.</p>
+    </li>
+  </ol>
+
+  <figure>
+    <div class="fig-title">Detection &rarr; report record</div>
+    <svg viewBox="0 0 700 190" role="img" aria-label="Flow: detection box plus navigation fix and geometry feed a projection step, which outputs a JSON and CSV report row with latitude, longitude, class and confidence.">
+      <g font-size="12">
+        <rect x="20" y="30" width="150" height="54" rx="8" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <text x="95" y="52" text-anchor="middle" class="val">detection</text>
+        <text x="95" y="70" text-anchor="middle" class="axis">tile row/col, box, class</text>
+
+        <rect x="20" y="104" width="150" height="54" rx="8" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <text x="95" y="126" text-anchor="middle" class="val">nav metadata</text>
+        <text x="95" y="144" text-anchor="middle" class="axis">fix · heading · altitude</text>
+
+        <path d="M170 57 H250 M170 131 H210 Q230 131 230 111 V95 H250" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+        <polygon points="250,57 242,53 242,61" fill="var(--muted)"/>
+        <polygon points="250,95 242,91 242,99" fill="var(--muted)"/>
+
+        <rect x="250" y="60" width="150" height="60" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="325" y="84" text-anchor="middle" class="val">project</text>
+        <text x="325" y="102" text-anchor="middle" class="axis">pixels → ground → lat/lon</text>
+
+        <path d="M400 90 H470" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+        <polygon points="470,90 462,86 462,94" fill="var(--muted)"/>
+
+        <rect x="470" y="50" width="210" height="80" rx="8" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <text x="484" y="72" class="val">report row</text>
+        <text x="484" y="90" class="axis">lat 63.44° · lon 10.39°</text>
+        <text x="484" y="106" class="axis">class · 0–100% · size m</text>
+        <text x="484" y="122" class="axis">JSON + CSV · audit ref</text>
+      </g>
+    </svg>
+    <figcaption>Same navigation reader feeds Module 2's shadow check. If a labelled source carries no real
+    coordinates, a representative survey track stands in for the demo &mdash; stated plainly, not hidden.</figcaption>
+  </figure>
+
+  <h3 class="col">Deliverables</h3>
+  <ul class="tick col">
+    <li>XTF + navigation-CSV parser, validated on the AURORA fixture.</li>
+    <li>Pixel&rarr;lat/lon projection, checked against AURORA's known fixes.</li>
+    <li>JSON and CSV export matching <code>schema.py</code>, one row per hazard, with audit pointers.</li>
+  </ul>
+</section>
+
+<section class="col">
+  <h2><span class="n">09</span> Who does what, this week</h2>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Track</th><th>Now</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td>Module 1 &mdash; detector</td><td>Run 2 retrain (unattended, ~2.5 h)</td><td>crab-pot decision rule &rarr; lock</td></tr>
+        <tr><td>Module 2 &mdash; confidence</td><td>wire calibrator + shadow check to current checkpoint</td><td>ECE + FP-rate numbers</td></tr>
+        <tr><td>Module 3 &mdash; geotag</td><td>AURORA XTF/CSV parser + projection math</td><td>lat/lon validated vs known fixes</td></tr>
+        <tr><td>Module 4 &mdash; dashboard</td><td>already in parallel on mock data</td><td>swap mock &rarr; live API</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Modules 2, 3 and 4 do not wait for the retrain &mdash; the detector's output shape is frozen. The
+  submission deadline is <strong>5 September</strong>.</p>
+</section>
+
+<footer>
+  DRISHTI · detector run <span class="mono">yolov8_seg_20260830_213333</span> · eval on
+  <span class="mono">splits/test</span> (705 img) · report generated 2026-08-31 ·
+  source figures in <span class="mono">ml/models/checkpoints/&hellip;/</span>
+</footer>
+
+</body>
+</html>

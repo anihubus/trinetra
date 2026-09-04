@@ -1,0 +1,12 @@
+{
+  "name": "@drishti/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "python -m daphne -b 0.0.0.0 -p 8000 drishti_api.asgi:application",
+    "worker": "celery -A drishti_api worker -l info -P solo",
+    "build": "python manage.py collectstatic --noinput",
+    "lint": "python -m ruff check .",
+    "test": "python -m pytest -q"
+  }
+}

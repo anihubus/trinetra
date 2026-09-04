@@ -1,0 +1,25 @@
+# ---- DRISHTI: YOLOv8n-seg model configuration ----
+# This is the dataset config for the nano variant (lighter, for edge deployment).
+# Identical class set to drishti.yaml; use model=yolov8n-seg.pt at train time.
+
+path: ../data/splits
+train: train/images
+val: val/images
+test: test/images
+
+task: segment
+
+nc: 12
+names:
+  0: bottle
+  1: can
+  2: chain
+  3: drink_carton
+  4: hook
+  5: propeller
+  6: shampoo_bottle
+  7: standing_bottle
+  8: tire
+  9: valve
+  10: wall
+  11: net

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRISHTI Detector · Run 2</title>
+<meta name="description" content="Second training run of the side-scan-sonar detector: what changed from Run 1, the held-out results, why shipwreck and cylinder are stuck, and the decisions going forward (ship 4 classes, build Module 2 next).">
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f3f6f7;--surface:#fcfdfd;--surface-2:#eaeef0;
+    --ink:#0f1519;--ink-2:#48535a;--muted:#7b868c;
+    --rule:#dbe2e5;--rule-strong:#c3ccd0;
+    --accent:#0e7c8b;--accent-soft:#e2f0f2;
+    --good:#0a7d1f;--good-soft:#e3f2e6;
+    --warn:#9a6400;--warn-soft:#f6ecda;
+    --crit:#c22f2f;--crit-soft:#f7e3e3;
+    --shadow:0 1px 2px rgba(15,25,30,.06),0 8px 24px -12px rgba(15,25,30,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+      --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+      --rule:#252f36;--rule-strong:#33404a;
+      --accent:#3fb6c6;--accent-soft:#123037;
+      --good:#3fbf57;--good-soft:#12331a;
+      --warn:#e0a01e;--warn-soft:#33290f;
+      --crit:#e35b5b;--crit-soft:#361a1a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#090e11;--surface:#11181c;--surface-2:#1a242a;
+    --ink:#eef3f5;--ink-2:#a9b5bb;--muted:#79848a;
+    --rule:#252f36;--rule-strong:#33404a;
+    --accent:#3fb6c6;--accent-soft:#123037;
+    --good:#3fbf57;--good-soft:#12331a;
+    --warn:#e0a01e;--warn-soft:#33290f;
+    --crit:#e35b5b;--crit-soft:#361a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+  header.mast{max-width:1000px;margin:0 auto;padding:56px 24px 28px}
+  .kicker{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 18px;display:flex;align-items:center;gap:12px}
+  .kicker::after{content:"";height:1px;flex:1;background:var(--rule)}
+  h1{font-size:clamp(2rem,5.2vw,3rem);line-height:1.06;letter-spacing:-.02em;font-weight:600;margin:0 0 18px;text-wrap:balance}
+  .standfirst{font-size:1.17rem;color:var(--ink-2);margin:0 0 26px;max-width:60ch;text-wrap:pretty}
+  .specbar{display:flex;flex-wrap:wrap;gap:8px 10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+  .specbar span{background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;padding:4px 9px;color:var(--ink-2)}
+  .specbar b{color:var(--ink);font-weight:600}
+  section{max-width:1000px;margin:0 auto;padding:32px 24px 0}
+  .col{max-width:760px}
+  h2{font-size:1.02rem;font-weight:600;letter-spacing:.02em;margin:46px 0 4px;padding-top:22px;border-top:1px solid var(--rule-strong);display:flex;align-items:baseline;gap:12px}
+  h2 .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+  h3{font-size:1.04rem;font-weight:600;margin:28px 0 6px}
+  p{margin:12px 0;max-width:70ch}
+  strong{font-weight:600}
+  code{font-family:"IBM Plex Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+  .lede{font-size:1.05rem;color:var(--ink-2)}
+
+  .tldr{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:22px 24px;margin:26px 0 8px;box-shadow:var(--shadow)}
+  .tldr h2{border:0;margin:0 0 10px;padding:0}
+  .tldr p{margin:10px 0}.tldr p:first-of-type{margin-top:0}
+
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:22px 0}
+  .readout div{background:var(--surface);padding:14px 16px}
+  .readout .v{font-family:"IBM Plex Mono",monospace;font-size:1.42rem;font-weight:500;letter-spacing:-.01em}
+  .readout .d{font-family:"IBM Plex Mono",monospace;font-size:12px;margin-top:2px}
+  .readout .d.up{color:var(--good)}.readout .d.down{color:var(--crit)}.readout .d.flat{color:var(--muted)}
+  .readout .l{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+
+  .tbl-scroll{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  thead th{background:var(--surface-2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+  tbody tr:last-child td{border-bottom:0}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+  tbody td:first-child{font-weight:500}
+  .delta-up{color:var(--good)}.delta-down{color:var(--crit)}.delta-flat{color:var(--muted)}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+  .pill.good{color:var(--good);background:var(--good-soft)}
+  .pill.warn{color:var(--warn);background:var(--warn-soft)}
+  .pill.crit{color:var(--crit);background:var(--crit-soft)}
+  .pill.flat{color:var(--ink-2);background:var(--surface-2)}
+
+  figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 20px 14px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:13px;color:var(--muted);margin-top:12px;max-width:70ch}
+  .fig-title{font-size:12.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+  svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  .axis{fill:var(--muted);font-size:11px}
+  .axis-lbl{fill:var(--ink-2);font-size:11px}
+  .grid{stroke:var(--rule)}
+  .baseline{stroke:var(--rule-strong)}
+  .val{fill:var(--ink);font-size:11px;font-weight:600}
+  .box-n{fill:var(--surface-2);stroke:var(--rule-strong)}
+  .box-a{fill:var(--accent-soft);stroke:var(--accent)}
+
+  ul.tick{list-style:none;padding:0;margin:16px 0}
+  ul.tick li{padding:7px 0 7px 26px;position:relative;border-bottom:1px solid var(--rule);font-size:14.5px}
+  ul.tick li:last-child{border-bottom:0}
+  ul.tick li::before{content:"";position:absolute;left:4px;top:14px;width:8px;height:8px;border:1.5px solid var(--accent);border-radius:2px}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:22px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:2px 0 20px 46px;border-left:1px solid var(--rule);margin-left:14px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:-15px;top:-4px;width:29px;height:29px;border-radius:50%;background:var(--surface);border:1px solid var(--rule-strong);color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  ol.steps>li:last-child{border-left-color:transparent}
+  ol.steps>li h4{margin:0 0 3px;font-size:1rem;font-weight:600}
+  ol.steps>li p{margin:4px 0;font-size:14.5px;color:var(--ink-2)}
+
+  .flow{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0;font-size:13px}
+  .flow .node{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:12px 13px;position:relative}
+  .flow .node .t{font-weight:600;margin-bottom:3px}
+  .flow .node .s{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+  .flow .node.done{border-color:color-mix(in srgb,var(--good) 45%,var(--rule))}
+  .flow .node.now{border-color:color-mix(in srgb,var(--accent) 55%,var(--rule));box-shadow:0 0 0 3px var(--accent-soft)}
+  .flow .node .tag{position:absolute;top:-9px;left:12px;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;padding:1px 6px;border-radius:4px;font-weight:700}
+  .flow .node.done .tag{background:var(--good-soft);color:var(--good)}
+  .flow .node.now .tag{background:var(--accent-soft);color:var(--accent)}
+  .flow .node.next .tag{background:var(--surface-2);color:var(--muted)}
+
+  .note{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:8px;padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+  .note h3{margin:0 0 6px}
+  footer{max-width:1000px;margin:44px auto 0;padding:22px 24px;border-top:1px solid var(--rule-strong);color:var(--muted);font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+</head>
+<body>
+<header class="mast">
+  <p class="kicker">DRISHTI &nbsp;/&nbsp; SIH 2026 &nbsp;/&nbsp; PS 26057</p>
+  <h1>Detector Run 2 &mdash; cleaner, not stronger</h1>
+  <p class="standfirst">Retrained with the Run 1 data fixes. It didn't rescue crab-pot and didn't lift shipwreck
+  or cylinder off their plateau &mdash; but it cut the false-alarm rate. That settles the class count and points
+  the next work at Module 2.</p>
+  <div class="specbar mono">
+    <span><b>Model</b> YOLOv8s detection</span>
+    <span><b>Epochs</b> 120 · 2.85 h</span>
+    <span><b>Test set</b> 785 real + synth</span>
+    <span><b>Speed</b> 3.8 ms / frame</span>
+    <span><b>Date</b> 2026-08-31</span>
+  </div>
+</header>
+
+<section>
+  <div class="tldr col">
+    <h2>The short version</h2>
+    <p><strong>Same detection coverage, meaningfully cleaner.</strong> Test mAP50 held at 0.61, but precision
+    rose 0.69&nbsp;&rarr;&nbsp;0.73 and the false-positive rate fell 0.31&nbsp;&rarr;&nbsp;0.27.</p>
+    <p><strong>Pipeline is now near-perfect</strong> (0.99 AP<sub>50</sub>, real data). <strong>crab-pot moved
+    but stayed broken</strong> (0.12&nbsp;&rarr;&nbsp;0.19, still misses 71%). <strong>Shipwreck and cylinder
+    didn't budge</strong> (~0.45, ~0.40) &mdash; that's a real-data-quality ceiling, not a training problem.</p>
+    <p><strong>Decision: ship 4 classes</strong>, drop crab-pot per the pre-agreed rule. <strong>Build Module 2
+    next</strong>, before any further retrain &mdash; its numbers decide whether one last retrain is worth it.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">01</span> What we changed from Run 1</h2>
+  <p class="col">Every Run 1 failure traced to a data decision. Four edits, all using data already on disk:</p>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Change</th><th>Meant to</th><th>What it did</th></tr></thead>
+      <tbody>
+        <tr><td>crab-pot 900 &rarr; 1,600 train images</td><td>rescue the failing class</td><td><span class="pill warn">partial</span> AP<sub>50</sub> 0.12&rarr;0.19, recall 0.24&rarr;0.29 &mdash; moved, not fixed</td></tr>
+        <tr><td>drop KLSG "whole-frame" shipwreck boxes</td><td>stop rock-cluster false alarms</td><td><span class="pill good">worked</span> shipwreck precision 0.57&rarr;0.66; overall FP rate 0.31&rarr;0.27</td></tr>
+        <tr><td>+350 synthetic cylinders</td><td>pad the thin class</td><td><span class="pill crit">no help</span> cylinder AP<sub>50</sub> 0.43&rarr;0.40 (slight hurt &mdash; crude shapes)</td></tr>
+        <tr><td>background tiles 400 &rarr; 500</td><td>fewer false positives</td><td><span class="pill good">helped</span> contributed to the FP-rate drop</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col mono" style="font-size:13px;color:var(--muted)">Note: the test set was rebuilt between runs
+  (crab-pot cap changed), so Run 1 vs Run 2 is directional, not an exact A/B. Both are held-out real + synthetic
+  ghost-net.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">02</span> Results on the held-out test set</h2>
+
+  <div class="readout col">
+    <div><div class="v mono">0.606</div><div class="d up">+0.010 vs Run 1</div><div class="l">mAP@50</div></div>
+    <div><div class="v mono">0.437</div><div class="d flat">&minus;0.003</div><div class="l">mAP@50&ndash;95</div></div>
+    <div><div class="v mono">0.734</div><div class="d up">+0.047</div><div class="l">precision</div></div>
+    <div><div class="v mono">0.650</div><div class="d flat">+0.007</div><div class="l">recall</div></div>
+    <div><div class="v mono">0.266</div><div class="d up">&minus;0.047 (better)</div><div class="l">false-positive rate</div></div>
+  </div>
+
+  <figure>
+    <div class="fig-title">AP@50 by class &mdash; Run 1 &rarr; Run 2</div>
+    <svg viewBox="0 0 700 300" role="img" aria-label="Per-class AP50, Run 1 shown as a hollow tick and Run 2 as a solid bar. Submarine pipeline 0.98 to 0.99. Shipwreck 0.45 to 0.45, flat. Mine cylinder 0.43 to 0.40, slightly down. Crab pot 0.12 to 0.19, up but still failing. Ghost net 0.995 both, synthetic only.">
+      <g class="grid" stroke-width="1">
+        <line x1="180" y1="22" x2="180" y2="228"/>
+        <line x1="300" y1="22" x2="300" y2="228"/>
+        <line x1="420" y1="22" x2="420" y2="228"/>
+        <line x1="540" y1="22" x2="540" y2="228"/>
+        <line x1="660" y1="22" x2="660" y2="228"/>
+      </g>
+      <g class="axis" text-anchor="middle">
+        <text x="180" y="244">0</text><text x="300" y="244">.25</text><text x="420" y="244">.50</text>
+        <text x="540" y="244">.75</text><text x="660" y="244">1.0</text>
+      </g>
+      <line x1="420" y1="18" x2="420" y2="228" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="420" y="14" class="axis-lbl" fill="var(--accent)" text-anchor="middle">0.50 — usable</text>
+
+      <g text-anchor="end" class="axis-lbl">
+        <text x="170" y="44">submarine_pipeline</text>
+        <text x="170" y="94">shipwreck</text>
+        <text x="170" y="144">mine_cylinder</text>
+        <text x="170" y="194">crab_pot</text>
+      </g>
+      <!-- Run2 solid bars (scale: 0..1 -> 180..660 = 480px) -->
+      <rect x="180" y="28" width="477" height="24" rx="4" fill="var(--good)"/>
+      <rect x="180" y="78" width="216" height="24" rx="4" fill="var(--warn)"/>
+      <rect x="180" y="128" width="191" height="24" rx="4" fill="var(--warn)"/>
+      <rect x="180" y="178" width="93"  height="24" rx="4" fill="var(--crit)"/>
+      <!-- Run1 ticks -->
+      <g stroke="var(--ink)" stroke-width="2">
+        <line x1="651" y1="24" x2="651" y2="56"/>
+        <line x1="397" y1="74" x2="397" y2="106"/>
+        <line x1="387" y1="124" x2="387" y2="156"/>
+        <line x1="237" y1="174" x2="237" y2="206"/>
+      </g>
+      <g class="val" text-anchor="start">
+        <text x="600" y="45" fill="#fff">0.99</text>
+        <text x="404" y="94">0.45 &nbsp;(flat)</text>
+        <text x="379" y="144">0.40 &nbsp;&darr;</text>
+        <text x="281" y="194">0.19 &nbsp;&uarr;</text>
+      </g>
+
+      <line x1="30" y1="222" x2="660" y2="222" class="baseline" stroke-dasharray="2 3"/>
+      <defs>
+        <pattern id="h1" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <rect width="7" height="7" fill="var(--surface-2)"/>
+          <line x1="0" y1="0" x2="0" y2="7" stroke="var(--muted)" stroke-width="2.5"/>
+        </pattern>
+      </defs>
+      <text x="170" y="269" text-anchor="end" class="axis-lbl">ghost_net</text>
+      <rect x="180" y="250" width="477" height="24" rx="4" fill="url(#h1)" stroke="var(--rule-strong)"/>
+      <text x="420" y="267" class="val" fill="var(--ink-2)">0.995 both runs — synthetic only</text>
+
+      <g class="axis" text-anchor="start">
+        <rect x="180" y="286" width="20" height="9" fill="var(--warn)"/><text x="206" y="294">Run 2 (solid)</text>
+        <line x1="300" y1="284" x2="300" y2="298" stroke="var(--ink)" stroke-width="2"/><text x="308" y="294">Run 1 (tick)</text>
+      </g>
+    </svg>
+    <figcaption>Only pipeline improved on the headline number. Shipwreck's gain is hidden here &mdash; its
+    <em>precision</em> rose from 0.57 to 0.66 (fewer false alarms) while AP<sub>50</sub> stayed flat.</figcaption>
+  </figure>
+
+  <div class="tbl-scroll col">
+    <table>
+      <thead><tr><th>Class</th><th class="num">AP@50</th><th class="num">Prec.</th><th class="num">Recall</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>submarine_pipeline</td><td class="num">0.994</td><td class="num">0.98</td><td class="num">0.99</td><td><span class="pill good">production-ready</span></td></tr>
+        <tr><td>shipwreck</td><td class="num">0.450</td><td class="num">0.66</td><td class="num">0.49</td><td><span class="pill warn">cleaner, still ~half</span></td></tr>
+        <tr><td>mine_cylinder</td><td class="num">0.398</td><td class="num">0.58</td><td class="num">0.48</td><td><span class="pill warn">tiny targets, thin data</span></td></tr>
+        <tr><td>crab_pot</td><td class="num">0.193</td><td class="num">0.45</td><td class="num">0.29</td><td><span class="pill crit">failing &mdash; dropping it</span></td></tr>
+        <tr><td>ghost_net</td><td class="num">0.995</td><td class="num">1.00</td><td class="num">1.00</td><td><span class="pill flat">synthetic echo &mdash; ignore</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">03</span> Training ran identically to Run 1</h2>
+  <figure>
+    <div class="fig-title">Validation mAP@50 across 120 epochs &mdash; both runs</div>
+    <svg viewBox="0 0 700 290" role="img" aria-label="Two nearly overlapping curves of validation mAP50 over 120 epochs. Run 1 dashed, Run 2 solid. Both rise from about 0.45 to a plateau near 0.76 by epoch 90, then flatten. Run 2 tracks Run 1 within about 0.02 the whole way.">
+      <g class="grid" stroke-width="1">
+        <line x1="52" y1="252" x2="670" y2="252"/>
+        <line x1="52" y1="196" x2="670" y2="196"/>
+        <line x1="52" y1="140" x2="670" y2="140"/>
+        <line x1="52" y1="84" x2="670" y2="84"/>
+        <line x1="52" y1="28" x2="670" y2="28"/>
+      </g>
+      <g class="axis" text-anchor="end">
+        <text x="46" y="256">0</text><text x="46" y="200">.25</text><text x="46" y="144">.50</text>
+        <text x="46" y="88">.75</text><text x="46" y="32">1.0</text>
+      </g>
+      <g class="axis" text-anchor="middle">
+        <text x="52" y="270">1</text><text x="200.7" y="270">30</text><text x="357.3" y="270">60</text>
+        <text x="513.9" y="270">90</text><text x="669.7" y="270">120</text>
+      </g>
+      <text x="360" y="286" class="axis-lbl" text-anchor="middle">epoch</text>
+
+      <!-- y(v)=252 - v*224 ; x(e)=52 + (e-1)/119*617.7 -->
+      <!-- Run 1 dashed -->
+      <polyline fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"
+        points="52,148 98.7,121 150.7,101 202.6,100 254.5,92 306.4,90 358.3,91 410.2,83 462.1,80 513.9,80 565.9,80 669.7,81"/>
+      <!-- Run 2 solid -->
+      <polyline fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round"
+        points="52,152 125,112 202.6,105 280,91 357.3,89 434.6,83 513.9,83 596,84 669.7,81"/>
+      <circle cx="669.7" cy="81" r="3.4" fill="var(--accent)"/>
+
+      <g font-size="11.5">
+        <line x1="470" y1="228" x2="490" y2="228" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="496" y="232" class="axis-lbl">Run 1</text>
+        <line x1="556" y1="228" x2="576" y2="228" stroke="var(--accent)" stroke-width="2.4"/>
+        <text x="582" y="232" class="axis-lbl">Run 2</text>
+      </g>
+    </svg>
+    <figcaption>Same climb, same plateau near mAP<sub>50</sub> 0.76, same ceiling. Run 2's early lag (more
+    crab-pot data to chew) closed by epoch 75. Neither run overfit; both got a small clean-up bump when mosaic
+    turned off at epoch 105.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">04</span> Why shipwreck and cylinder are stuck</h2>
+  <p class="col">Both have <em>real</em> data. The problem is how little of it survives our pipeline, and how
+  small the objects are.</p>
+
+  <h3 class="col">Shipwreck &mdash; the tiling throws away ~90% of AI4Shipwrecks</h3>
+  <figure>
+    <div class="fig-title">141 training strips in &rarr; 152 usable tiles out</div>
+    <svg viewBox="0 0 700 220" role="img" aria-label="Funnel: 141 raw AI4Shipwrecks transect strips become only 152 tiles after non-overlapping 640-pixel tiling, because most strips contain a wreck in only one or two tiles, edge wrecks get split and filtered out, and some strips have no wreck at all. Adding Roboflow ship and plane brings the total to 919 shipwreck instances spanning three visual domains.">
+      <rect x="16" y="40" width="150" height="60" rx="7" class="box-n"/>
+      <text x="91" y="66" text-anchor="middle" class="val">141 strips</text>
+      <text x="91" y="83" text-anchor="middle" class="axis">~5600&times;1728 px</text>
+
+      <path d="M166 70 H214" stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#fa)"/>
+      <defs><marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
+      <text x="190" y="62" text-anchor="middle" class="axis">tile 640,</text>
+      <text x="190" y="98" text-anchor="middle" class="axis">no overlap</text>
+
+      <rect x="216" y="40" width="150" height="60" rx="7" class="box-n" fill="var(--crit-soft)" stroke="var(--crit)"/>
+      <text x="291" y="66" text-anchor="middle" class="val">152 tiles</text>
+      <text x="291" y="83" text-anchor="middle" class="axis">~1 per strip</text>
+
+      <path d="M366 70 H414" stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#fa)"/>
+      <text x="390" y="62" text-anchor="middle" class="axis">+ Roboflow</text>
+      <text x="390" y="98" text-anchor="middle" class="axis">Ship + Plane</text>
+
+      <rect x="416" y="40" width="170" height="60" rx="7" class="box-n"/>
+      <text x="501" y="66" text-anchor="middle" class="val">919 instances</text>
+      <text x="501" y="83" text-anchor="middle" class="axis">3 sonar domains</text>
+
+      <text x="16" y="132" class="axis-lbl" font-weight="600">Where the strips go:</text>
+      <text x="16" y="152" class="axis">&bull; a wreck sits in only 1&ndash;2 of a strip's ~27 tiles</text>
+      <text x="16" y="170" class="axis">&bull; wrecks on a tile boundary get split, then filtered out of both halves</text>
+      <text x="16" y="188" class="axis">&bull; several strips contain no wreck at all</text>
+      <text x="16" y="206" class="axis">&bull; masks are "wreck / not-wreck" pixels &rarr; one hull splits into several loose boxes</text>
+    </svg>
+    <figcaption>Fixes, all on data already on disk: overlapping tiles (stride 320), keep partly-visible
+    wrecks, morphological-close the mask so a broken hull reads as one object, and consider dropping "Plane"
+    from the shipwreck label. Expected yield: 600&ndash;1,000+ tiles instead of 152.</figcaption>
+  </figure>
+
+  <h3 class="col">Cylinder &mdash; the targets are tiny</h3>
+  <p class="col">Real MILCO boxes are <strong>3&ndash;5% of the frame</strong> (~15&ndash;50 px). Sub-20&nbsp;px
+  objects are at the edge of what YOLOv8 at 640-pixel input can localise &mdash; the whole model's
+  small-object recall is only 0.20. Only 315 real instances, and drawn-rectangle synthetics have the wrong
+  acoustic signature (uniformly bright instead of bright-edge-plus-shadow).</p>
+  <p class="col">Fixes: <strong>copy-paste augmentation</strong> from the real MILCO cut-outs (real signature,
+  synthetic placement) rather than drawn shapes; fold in the <strong>NonMILCO</strong> contacts (+178 real
+  instances &mdash; the PS asks for "cylinders", not "mines"); and train at <strong>896&nbsp;px</strong> input,
+  which helps every small-object class at once.</p>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">05</span> Decisions going forward</h2>
+
+  <ol class="steps col">
+    <li>
+      <h4>Ship 4 classes &mdash; drop crab_pot</h4>
+      <p>Test AP<sub>50</sub> 0.19 &lt; the pre-agreed 0.25 threshold. Two runs and near-doubled data prove it's
+      a separability problem, not a data-volume one. Method: filter class 0 at inference + set
+      <code>drishti.yaml</code> <code>nc: 4</code> &mdash; zero retrain. The four kept classes
+      (pipeline, shipwreck, cylinder, ghost-net) map exactly onto the hazards the problem statement names.</p>
+    </li>
+    <li>
+      <h4>Keep crab_pot as an honest slide</h4>
+      <p>"Also trained a derelict-fishing-gear detector on real data; AP<sub>50</sub> 0.19; small low-contrast
+      targets need dedicated small-object modelling &mdash; roadmapped." Reads as diligence, and crab pots
+      <em>are</em> lost fishing gear, so it's on-theme.</p>
+    </li>
+    <li>
+      <h4>Build Module 2 next &mdash; before any retrain</h4>
+      <p>Confidence calibration (Platt scaling &rarr; honest 0&ndash;100%, ECE + reliability diagram) plus the
+      shadow-geometry false-positive filter. Module 2 is also a <strong>measuring instrument</strong>: its
+      per-class precision-at-recall and its FP-rate reduction tell us whether the shipwreck/cylinder problem is
+      fixable downstream or needs better training data.</p>
+    </li>
+    <li>
+      <h4>Then decide: retrain once, or move on</h4>
+      <p>If calibration + shadow filter get shipwreck &amp; cylinder to <strong>~0.75+ precision at recall
+      ~0.5</strong> &rarr; skip the retrain, move on. If they stay <strong>under ~0.6 precision</strong> or the
+      shadow check barely helps &rarr; <strong>one</strong> final retrain: re-tile AI4Shipwrecks with overlap,
+      cylinder copy-paste + NonMILCO, <code>imgsz 896</code>. ~2.8 h unattended, doesn't block anyone.</p>
+    </li>
+  </ol>
+
+  <div class="note col">
+    <h3>Priority order &mdash; deadline 5 September</h3>
+    <p style="margin:6px 0">Modules 2 / 3 / 4 &nbsp;&gt;&nbsp; the data fixes + retrain &nbsp;&gt;&nbsp;
+    anything else. A working end-to-end pipeline with a 0.6 detector beats a 0.7 detector with no confidence
+    scoring, no geotagging and no map UI. If the team can push only one track, push 3 &amp; 4.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="col"><span class="n">06</span> Pipeline status</h2>
+  <div class="flow">
+    <div class="node next"><span class="tag">built · not wired</span><div class="t">Preprocess</div><div class="s">Lee · CLAHE<br>slant-range</div></div>
+    <div class="node done"><span class="tag">Module 1 · locked</span><div class="t">Detect</div><div class="s">YOLOv8s · nc=4<br>0.99 pipeline</div></div>
+    <div class="node now"><span class="tag">Module 2 · now</span><div class="t">Confidence &amp; filter</div><div class="s">calibrate → 0–100%<br>shadow check</div></div>
+    <div class="node next"><span class="tag">Module 3</span><div class="t">Geotag &amp; report</div><div class="s">XTF → lat/lon<br>JSON + CSV</div></div>
+    <div class="node next"><span class="tag">Module 4</span><div class="t">Dashboard</div><div class="s">upload · map<br>download</div></div>
+  </div>
+  <p class="col">Module 1 is done and locked at 4 classes. Module 2 starts now against the current
+  <code>best_detector.pt</code>. Modules 3 and 4 continue in parallel &mdash; the detector's output shape is
+  frozen, so nothing downstream waits on a possible retrain.</p>
+</section>
+
+<footer>
+  DRISHTI &middot; detector run <span class="mono">yolov8_seg_20260831_181646</span> &middot; eval on
+  <span class="mono">splits/test</span> (785 img) &middot; companion to run1_detector_report &middot; 2026-08-31
+</footer>
+</body>
+</html>

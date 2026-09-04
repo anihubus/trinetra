@@ -1,0 +1,60 @@
+# ---- DRISHTI .gitignore ----
+# Rule: code + configs + docs + notebooks go to git.
+# Data and weights live on Hugging Face (see README "Data & weights").
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# --- Secrets / local ---
+.env
+.env.local
+*.local
+.DS_Store
+Thumbs.db
+
+# --- Datasets (34 GB — reconstructible from public sources + ml/scripts/) ---
+ml/data/raw/
+ml/data/splits/
+ml/data/processed/
+ml/data/synthetic/
+!ml/data/README.md
+
+# --- Model weights & training runs ---
+# Training runs, per-epoch checkpoints and backups are big and live on Hugging Face.
+# The THREE files the pipeline actually needs are committed (64 MB) so a plain
+# `git clone` runs end-to-end with no fetch step. See docs/INTEGRATION.md.
+runs/
+weights/
+yolov8*.pt
+*.pt
+*.onnx
+*.engine
+ml/models/checkpoints/*
+ml/models/exported/*
+
+# 21.5 MB — pipeline.py default (needs torch)
+!ml/models/checkpoints/best_detector.pt
+# 42.7 MB — same model, torch-free onnxruntime path
+!ml/models/exported/best_detector.onnx
+#  2 KB — Module 2 per-class calibration
+!ml/models/exported/calibrator.pkl
+!ml/models/README.md
+
+# --- Build / IDE ---
+node_modules/
+dist/
+build/
+*.log
+.idea/
+.vscode/
+
+# uploaded sonar files + generated reports (runtime, never committed)
+apps/api/media/
+apps/api/staticfiles/
